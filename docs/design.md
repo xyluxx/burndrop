@@ -597,6 +597,8 @@ Each is a proposal. Items 1 to 5 are security improvements with no user-visible 
 17. **Optional two-step reveal confirmation** for organizations whose security sandboxes click buttons in links.
 18. **`verify-page` command and extension verify mode** (Code Verify pattern), so a hosted page can be checked against the published hash by anyone.
 
+- **Page copy reduced (2026-09-17, at the request of the owner).** The drop and reveal pages show the title, the secret name, the purpose sentence, the expiry countdown, the field, and the button. Storage, retention, the key fingerprint, and the reveal flags sit under a collapsed Details line instead of a metadata panel, and the explanatory paragraphs are gone. The agent instructions now tell the model to write the purpose for the page and to pick the ttl. On phones the page is edge to edge; from 640 px up it is a 576 px card.
+
 ## 19. Open questions for approval
 
 1. Approve the decisions in section 18 (all, or list exceptions).

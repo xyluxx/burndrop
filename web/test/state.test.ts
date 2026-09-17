@@ -15,7 +15,7 @@ describe("state copy", () => {
   it("has a title for every state and never an em dash", () => {
     for (const copy of [...Object.values(DROP_COPY), ...Object.values(REVEAL_COPY)]) {
       expect(copy.title.length).toBeGreaterThan(0);
-      for (const s of [copy.title, copy.text, copy.next]) {
+      for (const s of [copy.title, copy.text]) {
         expect(s.includes(String.fromCharCode(0x2014))).toBe(false);
       }
     }
@@ -41,7 +41,7 @@ describe("formatting", () => {
   it("formats countdowns by magnitude", () => {
     expect(formatCountdown(new Date("2026-01-03T05:00:00Z"), now)).toBe("2 d 5 h");
     expect(formatCountdown(new Date("2026-01-01T02:05:00Z"), now)).toBe("2 h 5 min");
-    expect(formatCountdown(new Date("2026-01-01T00:04:10Z"), now)).toBe("4 min 10 s");
+    expect(formatCountdown(new Date("2026-01-01T00:04:10Z"), now)).toBe("4 min");
     expect(formatCountdown(new Date("2026-01-01T00:00:42Z"), now)).toBe("42 s");
     expect(formatCountdown(now, now)).toBe("expired");
     expect(formatCountdown(new Date("2025-12-31T00:00:00Z"), now)).toBe("expired");

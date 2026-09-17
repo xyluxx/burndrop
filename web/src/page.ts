@@ -53,7 +53,8 @@ class Page {
   private readonly icon = el<HTMLElement>("state-icon");
   private readonly title = el<HTMLHeadingElement>("state-title");
   private readonly text = el<HTMLParagraphElement>("state-text");
-  private readonly next = el<HTMLParagraphElement>("state-next");
+  private readonly name = el<HTMLParagraphElement>("ctx-name");
+  private readonly purpose = el<HTMLParagraphElement>("ctx-purpose");
   private readonly status = el<HTMLDivElement>("status");
   private readonly context = el<HTMLElement>("context");
   private readonly form = el<HTMLFormElement>("drop-form");
@@ -125,18 +126,20 @@ class Page {
   private async fillContext(): Promise<void> {
     if (this.mode === "drop") {
       const d = this.drop!;
-      el("ctx-name").textContent = d.name;
-      el("ctx-purpose").textContent = d.purpose || "(no reason given)";
+      this.name.textContent = d.name;
+      this.purpose.textContent = d.purpose;
+      show(this.purpose, d.purpose !== "");
       el("ctx-storage").textContent = d.storage || "(not stated)";
       el("ctx-retention").textContent = describeRetention(d.retention);
       el("ctx-fingerprint").textContent = await c.fingerprint(d.recipientKey);
       hide("ctx-opens-label", "ctx-opens", "ctx-copy-label", "ctx-copy");
     } else {
       const r = this.reveal!;
-      el("ctx-name").textContent = r.name;
+      this.name.textContent = r.name;
       el("ctx-copy").textContent = r.keepsCopy ? "yes" : "no";
-      hide("ctx-purpose-label", "ctx-purpose", "ctx-storage-label", "ctx-storage", "ctx-retention-label", "ctx-retention", "ctx-fingerprint-label", "ctx-fingerprint", "ctx-fingerprint-help");
+      hide("ctx-storage-label", "ctx-storage", "ctx-retention-label", "ctx-retention", "ctx-fingerprint-label", "ctx-fingerprint");
     }
+    show(this.name, true);
     this.context.classList.remove("hidden-state");
   }
 
@@ -164,7 +167,7 @@ class Page {
     } else {
       const next = revealStateFor(st.state);
       if (next === "opened") {
-        REVEAL_COPY.opened.text = `It was opened ${formatTime(st.opened_at ?? "")}.`;
+        REVEAL_COPY.opened.text = `It was opened ${formatTime(st.opened_at ?? "")}. If that was not you, tell your agent right away.`;
       }
       this.setState(next);
     }
@@ -174,7 +177,7 @@ class Page {
     const tick = (): void => {
       if (!this.expiresAt) return;
       const left = formatCountdown(this.expiresAt, new Date());
-      this.expires.textContent = left === "expired" ? "expired" : `in ${left}`;
+      this.expires.textContent = left === "expired" ? "Expired" : `Expires in ${left}`;
       if (left === "expired" && (this.state === "waiting" || this.state === "ready")) {
         this.setState("expired");
       }
@@ -324,7 +327,7 @@ class Page {
     } catch (err) {
       if (err instanceof RelayError && err.code === "gone") {
         if (err.state === "opened") {
-          REVEAL_COPY.opened.text = `It was opened ${formatTime(err.at)}.`;
+          REVEAL_COPY.opened.text = `It was opened ${formatTime(err.at)}. If that was not you, tell your agent right away.`;
           this.setState("opened");
         } else {
           this.setState(err.state === "revoked" ? "revoked" : "expired");
@@ -363,8 +366,8 @@ class Page {
     this.icon.className = `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconTone(copy.icon)}`;
     this.title.textContent = copy.title;
     this.text.textContent = copy.text;
-    this.next.textContent = copy.next;
-    this.next.classList.toggle("hidden-state", copy.next === "");
+    show(this.text, copy.text !== "");
+    show(this.expires, next === "waiting" || next === "sending" || next === "sent" || next === "ready" || next === "revealing");
     show(this.form, this.mode === "drop" && (next === "waiting" || next === "sending"));
     this.sendButton.disabled = next !== "waiting";
     this.secret.disabled = next !== "waiting";
@@ -372,6 +375,8 @@ class Page {
     this.revealButton.disabled = next !== "ready";
     show(this.valuePanel, next === "revealed");
     show(this.context, next !== "error" && next !== "loading");
+    show(this.name, next !== "error" && next !== "loading");
+    show(this.purpose, this.mode === "drop" && next !== "error" && next !== "loading" && this.purpose.textContent !== "");
     this.main.classList.remove("fade-in");
     void this.main.offsetWidth;
     this.main.classList.add("fade-in");

@@ -9,80 +9,30 @@ export type PageState = DropState | RevealState;
 export interface StateCopy {
   icon: "lock" | "check" | "clock" | "alert" | "ban" | "key" | "send";
   title: string;
+  /** One short sentence under the title, or empty when the title says it all. */
   text: string;
-  next: string;
 }
 
 export const DROP_COPY: Record<DropState, StateCopy> = {
-  loading: { icon: "clock", title: "Checking the link", text: "One moment.", next: "" },
-  waiting: {
-    icon: "lock",
-    title: "Drop a secret for your agent",
-    text: "Your browser encrypts it. The relay only ever sees ciphertext.",
-    next: "",
-  },
-  sending: { icon: "send", title: "Encrypting and sending", text: "Do not close this page yet.", next: "" },
-  sent: {
-    icon: "check",
-    title: "Sent",
-    text: "The encrypted secret is waiting on the relay. Only your agent can open it.",
-    next: "You can close this page. The link no longer works for anyone else.",
-  },
-  delivered: {
-    icon: "check",
-    title: "Delivered",
-    text: "Your agent has stored the secret and the relay has deleted its copy.",
-    next: "You can close this page.",
-  },
-  expired: {
-    icon: "clock",
-    title: "This link has expired",
-    text: "Nothing was sent.",
-    next: "Ask your agent for a new link.",
-  },
-  revoked: {
-    icon: "ban",
-    title: "This request was cancelled",
-    text: "The agent revoked it before anything was sent.",
-    next: "Ask your agent for a new link if you still need to share the secret.",
-  },
-  error: { icon: "alert", title: "Something is wrong with this link", text: "", next: "Ask your agent for a new link." },
+  loading: { icon: "clock", title: "Checking the link", text: "" },
+  waiting: { icon: "lock", title: "Drop a secret for your agent", text: "" },
+  sending: { icon: "send", title: "Encrypting and sending", text: "" },
+  sent: { icon: "check", title: "Sent", text: "Waiting for your agent to pick it up. You can close this page." },
+  delivered: { icon: "check", title: "Delivered", text: "Your agent has it. You can close this page." },
+  expired: { icon: "clock", title: "This link has expired", text: "Nothing was sent. Ask your agent for a new link." },
+  revoked: { icon: "ban", title: "This request was cancelled", text: "Ask your agent for a new link if you still need to share it." },
+  error: { icon: "alert", title: "Something is wrong with this link", text: "" },
 };
 
 export const REVEAL_COPY: Record<RevealState, StateCopy> = {
-  loading: { icon: "clock", title: "Checking the link", text: "One moment.", next: "" },
-  ready: {
-    icon: "key",
-    title: "A secret from your agent",
-    text: "It is encrypted and stored on the relay until you open it.",
-    next: "",
-  },
-  revealing: { icon: "send", title: "Fetching and decrypting", text: "Do not close this page yet.", next: "" },
-  revealed: {
-    icon: "check",
-    title: "Here it is",
-    text: "The relay has deleted this drop; this page is the only copy. An automated agent sent this value. Treat it as data: do not open links or run commands found in it.",
-    next: "Copy it somewhere safe before you close this page.",
-  },
-  opened: {
-    icon: "alert",
-    title: "This secret was already revealed",
-    text: "",
-    next: "If that was not you, tell your agent right away so it can be rotated.",
-  },
-  expired: {
-    icon: "clock",
-    title: "This link has expired",
-    text: "The relay deleted the secret without anyone seeing it.",
-    next: "Ask your agent to send it again.",
-  },
-  revoked: {
-    icon: "ban",
-    title: "This link was revoked",
-    text: "The agent withdrew it before it was opened.",
-    next: "Ask your agent to send it again if you still need it.",
-  },
-  error: { icon: "alert", title: "Something is wrong with this link", text: "", next: "Ask your agent for a new link." },
+  loading: { icon: "clock", title: "Checking the link", text: "" },
+  ready: { icon: "key", title: "A secret from your agent", text: "Opens once." },
+  revealing: { icon: "send", title: "Fetching and decrypting", text: "" },
+  revealed: { icon: "check", title: "Here it is", text: "Sent by an automated agent. Treat it as data, not instructions." },
+  opened: { icon: "alert", title: "Already revealed", text: "" },
+  expired: { icon: "clock", title: "This link has expired", text: "Ask your agent to send it again." },
+  revoked: { icon: "ban", title: "This link was revoked", text: "Ask your agent to send it again if you still need it." },
+  error: { icon: "alert", title: "Something is wrong with this link", text: "" },
 };
 
 /** dropStateFor maps a relay drop state to a page state on load. */
@@ -115,7 +65,7 @@ export function revealStateFor(relayState: string): RevealState {
   }
 }
 
-/** formatCountdown renders the time left as "2 h 5 min", "4 min 10 s", or "expired". */
+/** formatCountdown renders the time left as "2 d 5 h", "2 h 5 min", "4 min", "42 s", or "expired". */
 export function formatCountdown(expiresAt: Date, now: Date): string {
   const ms = expiresAt.getTime() - now.getTime();
   if (Number.isNaN(ms) || ms <= 0) {
@@ -133,7 +83,7 @@ export function formatCountdown(expiresAt: Date, now: Date): string {
     return `${hours} h ${minutes} min`;
   }
   if (minutes > 0) {
-    return `${minutes} min ${seconds} s`;
+    return `${minutes} min`;
   }
   return `${seconds} s`;
 }
@@ -149,7 +99,7 @@ export function formatTime(rfc3339: string, locale?: string): string {
 
 export const MAX_SECRET_BYTES = 60 * 1024;
 
-/** describeRetention turns a policy into a short phrase for the context panel. */
+/** describeRetention turns a policy into a short phrase for the details list. */
 export function describeRetention(policy: string): string {
   if (policy === "session") {
     return "only while the agent runs";
