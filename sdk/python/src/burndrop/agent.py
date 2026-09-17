@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from . import crypto
 from ._time import format_rfc3339, parse_rfc3339
 from .link import DropLink, LinkError, RevealLink, normalize_origin
+from .password import new_salt, reveal_key_with_password
 from .redact import Redactor
 from .relay import (
     CODE_GONE,
@@ -185,13 +186,24 @@ def _request_message(
     )
 
 
-def _send_message(name: str, link: str, expires_at: datetime | None, keeps_copy: bool) -> str:
+def _send_message(
+    name: str,
+    link: str,
+    expires_at: datetime | None,
+    keeps_copy: bool,
+    password_protected: bool = False,
+) -> str:
     copy_note = "I keep my copy of it." if keeps_copy else "I have deleted my copy of it."
+    password_note = (
+        " The page asks for your reveal password before it shows the value."
+        if password_protected
+        else ""
+    )
     return (
         f"Here is {name}: {link}\n\n"
         "The link reveals the value once, after you press the button on the page, and then "
-        f"it is gone. It expires at {_when(expires_at)}. {copy_note} Copy the value somewhere "
-        "safe before closing the page."
+        f"it is gone.{password_note} It expires at {_when(expires_at)}. {copy_note} Copy the "
+        "value somewhere safe before closing the page."
     )
 
 
@@ -253,6 +265,7 @@ class Sent:
     keeps_copy: bool
     message: str
     revoke_token: str = field(repr=False)
+    password_protected: bool = False
 
 
 @dataclass(frozen=True)
@@ -497,11 +510,14 @@ class Agent:
         value: bytes,
         ttl: int = DEFAULT_TTL,
         keeps_copy: bool = True,
+        password: str | None = None,
     ) -> Sent:
         """Encrypt a value for a human and return a one-time link.
 
         ``keeps_copy`` is disclosed to the human and authenticated into the
         ciphertext; pass False only if the program really deletes its copy.
+        With ``password``, the link carries a salt and the page asks the human
+        for that password before it shows the value (section 4.1).
         """
         validate_secret_name(name)
         ttl = _check_ttl(ttl)
@@ -510,8 +526,13 @@ class Agent:
             raise ValueError(f"value larger than {MAX_VALUE_BYTES} bytes")
         self.redactor.add(name, value)
         key = crypto.new_symmetric_key()
+        enc_key = key
+        salt = b""
+        if password is not None:
+            salt = new_salt()
+            enc_key = reveal_key_with_password(key, password, salt)
         env = crypto.Envelope.reveal(name, value)
-        ciphertext = crypto.encrypt_envelope(key, env, crypto.reveal_aad(name, keeps_copy))
+        ciphertext = crypto.encrypt_envelope(enc_key, env, crypto.reveal_aad(name, keeps_copy))
         created = self.relay.create_reveal(ciphertext, ttl)
         link = RevealLink(
             relay=self._relay_field(),
@@ -520,6 +541,7 @@ class Agent:
             key=key,
             name=name,
             keeps_copy=keeps_copy,
+            salt=salt,
         )
         try:
             url = link.build(self.page_origin)
@@ -531,8 +553,9 @@ class Agent:
             link=url,
             expires_at=created.expires_at,
             keeps_copy=keeps_copy,
-            message=_send_message(name, url, created.expires_at, keeps_copy),
+            message=_send_message(name, url, created.expires_at, keeps_copy, bool(salt)),
             revoke_token=created.revoke_token,
+            password_protected=bool(salt),
         )
 
     def revoke(self, request: Request) -> str:

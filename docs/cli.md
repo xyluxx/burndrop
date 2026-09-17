@@ -98,7 +98,7 @@ burndrop fetch [REQUEST_ID] [-wait SECONDS] [-json]
 burndrop send NAME [-ttl DURATION] [-delete-after] [-yes] [-json]
 ```
 
-Checks that `NAME` exists and is marked sendable before asking `Create a one-time link that reveals "NAME" to whoever opens it? [y/N]`, then creates the reveal and prints the message for the human. `-delete-after` deletes the agent's copy once the link exists (the message then says `I have deleted my copy of it.`). Errors: `this secret was received from a human and is not marked sendable; only secrets created by the agent or marked sendable by the operator can be sent`; `storage: secret not found`; `cancelled`. `-json` prints `request_id`, `link`, `expires_at`, `keeps_copy`, `message`.
+Checks that `NAME` exists and is marked sendable before asking `Create a one-time link that reveals "NAME" to whoever opens it? [y/N]`, then creates the reveal and prints the message for the human. `-delete-after` deletes the agent's copy once the link exists (the message then says `I have deleted my copy of it.`). Errors: `this secret was received from a human and is not marked sendable; only secrets created by the agent or marked sendable by the operator can be sent`; `storage: secret not found`; `cancelled`. `-json` prints `request_id`, `link`, `expires_at`, `keeps_copy`, `password_protected`, `message`. With the reveal password turned on (`reveal-password`), the link carries a salt, `password_protected` is true, and the message adds `The page asks for your reveal password before it shows the value.`; with the requirement on and no password stored, the command fails with `reveal links must carry a password but none is set; the human runs: burndrop reveal-password set`.
 
 ### run
 
@@ -158,6 +158,16 @@ burndrop audit [-n COUNT] [-json]
 
 Shows the last `COUNT` (default 50) audit events, oldest first, as `TIME EVENT NAME REQUEST RESULT DETAIL`, or `no audit events`. `-json` prints the raw events including their `fields`.
 
+### reveal-password
+
+```
+burndrop reveal-password [status|set|on|off|clear]
+```
+
+Manages the password that reveal links ask for before they show a value ([crypto specification](crypto-spec.md), section 4.1). `set` asks `New reveal password (not echoed, at least 8 characters): ` and `Type it again (not echoed): `, stores the password in the OS credential store (service `burndrop`, entry `reveal-password`), writes `reveal_password = "keychain:burndrop/reveal-password"` and `reveal_password_required = true` to the config, and prints the status. `on` and `off` change only the requirement; `on` fails with `no reveal password is set; run: burndrop reveal-password set` when nothing is stored. `clear` removes the credential store entry and both keys. `status` (the default) prints `reveal password: on (every reveal link asks for it before showing the value)`, `reveal password: set but off (turn it on with: burndrop reveal-password on)`, or `reveal password: not set (set one with: burndrop reveal-password set)`. Errors: `the reveal password must be at least 8 characters`; `the two passwords differ; nothing changed`.
+
+The password never goes through the agent's conversation: the MCP tool `reveal_password` can only turn the requirement on or off. To read the password from a variable instead (containers), write `reveal_password = "env:<VARIABLE>"` in the config by hand.
+
 ### drop
 
 ```
@@ -172,7 +182,7 @@ The human side of a request without a browser. Prints to stderr what the agent a
 burndrop open LINK [-yes]
 ```
 
-The human side of a reveal without a browser. Prints the name, whether the agent keeps a copy, and the relay to stderr, warns `Opening it deletes it from the relay; it can be shown only once.`, asks `Reveal it now? [y/N]`, then writes the value to stdout (with a trailing newline added if missing) and `(the relay copy is deleted; store the value somewhere safe)` to stderr. Errors: `this is not a valid reveal link: ...`; `this link has expired or was never created`; `this link was already used or revoked (state: opened|revoked|expired)`; `cancelled; the secret is still on the relay until <time>`; `the secret could not be decrypted: the link was altered or the relay returned the wrong data; the relay copy is gone, ask the agent to send it again`.
+The human side of a reveal without a browser. Prints the name, whether the agent keeps a copy, and the relay to stderr, warns `Opening it deletes it from the relay; it can be shown only once.`, asks `Reveal it now? [y/N]`, then writes the value to stdout (with a trailing newline added if missing) and `(the relay copy is deleted; store the value somewhere safe)` to stderr. A link that needs the reveal password also prints `password: required (the one you set with reveal-password)` and, after the confirmation, asks `Reveal password (not echoed): ` before the relay is asked, so an empty answer cancels without spending the link. A wrong password prints `Wrong password. The relay copy is already gone, so try again here.` and asks again, up to five attempts, then fails with `wrong password; the relay copy is gone, ask the agent to send it again`. Errors: `this is not a valid reveal link: ...`; `this link has expired or was never created`; `this link was already used or revoked (state: opened|revoked|expired)`; `cancelled; the secret is still on the relay until <time>`; `the secret could not be decrypted: the link was altered or the relay returned the wrong data; the relay copy is gone, ask the agent to send it again`.
 
 ### verify-page
 

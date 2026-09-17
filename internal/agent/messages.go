@@ -67,6 +67,10 @@ func sendMessage(out SendOutput, name string) string {
 	if !out.KeepsCopy {
 		copyNote = "I have deleted my copy of it."
 	}
-	return fmt.Sprintf("Here is %s: %s\n\nThe link reveals the value once, after you press the button on the page, and then it is gone. It expires at %s. %s Copy the value somewhere safe before closing the page.",
-		name, out.Link, out.ExpiresAt.Format("2006-01-02 15:04 UTC"), copyNote)
+	passwordNote := ""
+	if out.PasswordProtected {
+		passwordNote = " The page asks for your reveal password before it shows the value."
+	}
+	return fmt.Sprintf("Here is %s: %s\n\nThe link reveals the value once, after you press the button on the page, and then it is gone.%s It expires at %s. %s Copy the value somewhere safe before closing the page.",
+		name, out.Link, passwordNote, out.ExpiresAt.Format("2006-01-02 15:04 UTC"), copyNote)
 }

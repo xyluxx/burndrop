@@ -27,7 +27,17 @@ func (a *app) cmdMCP(ctx context.Context, args []string) error {
 	}
 	defer l.agent.Store.Close()
 	confirm := !*noConfirm
-	server := mcpserver.New(l.agent, mcpserver.Options{Version: a.version, ConfirmSend: &confirm})
+	apply := func(required bool) error {
+		if err := l.cfg.SetRevealPasswordRequired(required); err != nil {
+			return err
+		}
+		if err := agent.SaveConfig(l.paths.ConfigFile, l.cfg); err != nil {
+			return err
+		}
+		l.agent.Config.RevealPasswordRequired = required
+		return nil
+	}
+	server := mcpserver.New(l.agent, mcpserver.Options{Version: a.version, ConfirmSend: &confirm, ApplyRevealPassword: apply})
 	fmt.Fprintf(a.stderr, "burndrop %s: MCP server on stdio, relay %s, storage %s\n", a.version, l.cfg.Relay, l.cfg.Storage)
 	return server.Run(ctx, &mcp.StdioTransport{})
 }

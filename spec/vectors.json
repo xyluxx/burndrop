@@ -335,5 +335,31 @@
       "sha256": "47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
       "valid": false
     }
+  ],
+  "reveal_password": [
+    {
+      "name": "ascii passphrase",
+      "password": "correct horse battery staple",
+      "salt": "Q2v4ZgBDiDitvlSN2j1DUA",
+      "link_key": "CPav_3NJxApinbafO6fqFIMWiH7SY5xTfPtbvWE54bw",
+      "password_key": "2fc8E9GPkXfUigrI4y46fHwLrE-xpkt-4l_7AJEvKBU",
+      "key": "HFGHFVDY29xunE3JRnvezEihGKw3VmVA-1hng6Gmy80"
+    },
+    {
+      "name": "unicode password",
+      "password": "päss wörd 密码",
+      "salt": "Jo7G2w3X-uIdlUUmxtf2Mw",
+      "link_key": "6eLXkDToqcAiKAkj_PqVXnpnasqW1cf8kD8_jWEswqk",
+      "password_key": "l4fRGc0kEejxnyjlTrPbkQIQM_5zix-W4wnUq6Y3mlY",
+      "key": "XHNi53jVP08XxC0fI6f_XVEshZ2nI_rBui0r95VoMLs"
+    },
+    {
+      "name": "short password",
+      "password": "hunter22",
+      "salt": "wWdYHbYrQ1Sn7tRF5i_7Qg",
+      "link_key": "IFewoGPCs5slYVUO7LosQDBYdxIqEI1Mp7aqoca64xM",
+      "password_key": "zW8HXjX4IoYqV675Rb9n3J0iwQTzHlAS4fQQ94cOh6I",
+      "key": "-sGFFba7GQ32PX0dyNi5wpqGs_G84eN-CAwNUM4FHng"
+    }
   ]
 }

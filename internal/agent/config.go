@@ -24,6 +24,13 @@ type Config struct {
 	DefaultTTL       string `toml:"default_ttl,omitempty"`
 	DefaultRetention string `toml:"default_retention,omitempty"`
 
+	// RevealPassword references the reveal password the human set
+	// (keychain:<service>/<entry> or env:<VARIABLE>); the value itself is
+	// never in this file. RevealPasswordRequired turns the requirement on:
+	// every send_secret link then asks for the password on the page.
+	RevealPassword         string `toml:"reveal_password,omitempty"`
+	RevealPasswordRequired bool   `toml:"reveal_password_required,omitempty"`
+
 	RunWithSecret RunConfig     `toml:"run_with_secret,omitempty"`
 	Audit         AuditConfig   `toml:"audit,omitempty"`
 	Backends      BackendConfig `toml:"backends,omitempty"`
@@ -127,6 +134,9 @@ const (
 	DefaultAgentKeyRef  = "keychain:" + AppName + "/agent-key"
 	DefaultAgentKeyEnv  = "BURNDROP_API_KEY"
 	KeychainAgentKeyRef = "agent-key"
+	// The reveal password lives in the keychain under this entry by default.
+	DefaultRevealPasswordRef  = "keychain:" + AppName + "/reveal-password"
+	KeychainRevealPasswordRef = "reveal-password"
 )
 
 // ErrNoConfig is returned when the config file does not exist.
@@ -232,6 +242,12 @@ func (c *Config) Validate() error {
 	if c.AgentKey != "" && c.AgentKey != AgentKeyNone && !strings.HasPrefix(c.AgentKey, "keychain:") && !strings.HasPrefix(c.AgentKey, "env:") {
 		return errors.New("agent_key must be keychain:<service>/<entry>, env:<VARIABLE>, or none; never a plain value")
 	}
+	if c.RevealPassword != "" && !strings.HasPrefix(c.RevealPassword, "keychain:") && !strings.HasPrefix(c.RevealPassword, "env:") {
+		return errors.New("reveal_password must be keychain:<service>/<entry> or env:<VARIABLE>; never a plain value")
+	}
+	if c.RevealPasswordRequired && c.RevealPassword == "" {
+		return errors.New("reveal_password_required is on but reveal_password is not set; run: burndrop reveal-password set")
+	}
 	if _, err := c.TTL(); err != nil {
 		return err
 	}
@@ -318,6 +334,56 @@ func (c *Config) ResolveAgentKey(getenv func(string) string, keychain func(servi
 		return strings.TrimSpace(v), ref, nil
 	default:
 		return "", ref, errors.New("agent_key must start with env: or keychain:")
+	}
+}
+
+// ErrNoRevealPasswordSet is returned when the requirement is turned on
+// without a password to require.
+var ErrNoRevealPasswordSet = errors.New("no reveal password is set; run: burndrop reveal-password set")
+
+// SetRevealPasswordRequired turns the reveal password requirement on or off.
+func (c *Config) SetRevealPasswordRequired(required bool) error {
+	if required && c.RevealPassword == "" {
+		return ErrNoRevealPasswordSet
+	}
+	c.RevealPasswordRequired = required
+	return nil
+}
+
+// ResolveRevealPassword returns the reveal password from the configured
+// reference, or nil with no error when none is configured. The value is
+// used exactly as stored: no trimming, because spaces are part of it.
+func (c *Config) ResolveRevealPassword(getenv func(string) string, keychain func(service, entry string) (string, error)) ([]byte, error) {
+	ref := c.RevealPassword
+	if ref == "" {
+		return nil, nil
+	}
+	if getenv == nil {
+		getenv = os.Getenv
+	}
+	switch {
+	case strings.HasPrefix(ref, "env:"):
+		name := strings.TrimPrefix(ref, "env:")
+		v := getenv(name)
+		if v == "" {
+			return nil, fmt.Errorf("environment variable %s is empty", name)
+		}
+		return []byte(v), nil
+	case strings.HasPrefix(ref, "keychain:"):
+		service, entry, ok := strings.Cut(strings.TrimPrefix(ref, "keychain:"), "/")
+		if !ok || service == "" || entry == "" {
+			return nil, errors.New("reveal_password keychain reference must be keychain:<service>/<entry>")
+		}
+		if keychain == nil {
+			return nil, errors.New("keychain lookups are not available")
+		}
+		v, err := keychain(service, entry)
+		if err != nil {
+			return nil, fmt.Errorf("reveal password not found in the keychain (%s): %w", ref, err)
+		}
+		return []byte(v), nil
+	default:
+		return nil, errors.New("reveal_password must start with env: or keychain:")
 	}
 }
 

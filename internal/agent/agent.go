@@ -28,6 +28,9 @@ type Agent struct {
 	PageOrigin string
 	Now        func() time.Time
 	Random     io.Reader
+	// PasswordSource returns the reveal password when the human has set
+	// one; the CLI wires it from the config reference. Nil means none.
+	PasswordSource func() ([]byte, error)
 }
 
 // New wires the dependencies. audit may be nil (disabled).
@@ -47,6 +50,9 @@ var (
 	ErrNoPending   = errors.New("no pending request with that id")
 	ErrAmbiguous   = errors.New("more than one request is pending; pass request_id")
 	ErrNotAllowed  = errors.New("command is not in run_with_secret.allowed_commands")
+	// ErrNoRevealPassword is returned when reveals must be password
+	// protected but no password is available.
+	ErrNoRevealPassword = errors.New("reveal links must carry a password but none is set; the human runs: burndrop reveal-password set")
 )
 
 // pendingRecord is what the agent keeps about an outstanding request: the
@@ -430,11 +436,12 @@ type SendInput struct {
 
 // SendOutput is the send_secret output.
 type SendOutput struct {
-	RequestID string    `json:"request_id"`
-	Link      string    `json:"link"`
-	ExpiresAt time.Time `json:"expires_at"`
-	KeepsCopy bool      `json:"keeps_copy"`
-	Message   string    `json:"message"`
+	RequestID         string    `json:"request_id"`
+	Link              string    `json:"link"`
+	ExpiresAt         time.Time `json:"expires_at"`
+	KeepsCopy         bool      `json:"keeps_copy"`
+	PasswordProtected bool      `json:"password_protected"`
+	Message           string    `json:"message"`
 }
 
 // CanSend reports whether a stored secret exists and is marked sendable,
@@ -484,10 +491,38 @@ func (a *Agent) Send(ctx context.Context, in SendInput) (SendOutput, error) {
 		return SendOutput{}, err
 	}
 	defer crypto.ZeroKey(key)
+	// With a reveal password the link carries key and a salt, and the
+	// ciphertext is under a key derived from both and the password.
+	encKey := key
+	var salt []byte
+	if a.Config.RevealPasswordRequired {
+		if a.PasswordSource == nil {
+			return SendOutput{}, ErrNoRevealPassword
+		}
+		password, err := a.PasswordSource()
+		if err != nil {
+			return SendOutput{}, fmt.Errorf("reveal password: %w", err)
+		}
+		if len(password) == 0 {
+			return SendOutput{}, ErrNoRevealPassword
+		}
+		salt, err = crypto.NewSalt(a.Random)
+		if err != nil {
+			crypto.Zero(password)
+			return SendOutput{}, err
+		}
+		derived, err := crypto.RevealKeyWithPassword(key, password, salt)
+		crypto.Zero(password)
+		if err != nil {
+			return SendOutput{}, err
+		}
+		defer crypto.ZeroKey(derived)
+		encKey = derived
+	}
 	keepsCopy := !in.DeleteAfter
 	env := crypto.Envelope{V: 1, Type: crypto.TypeReveal, Name: in.Name}
 	env.SetSecret(value)
-	ct, err := crypto.EncryptEnvelope(key, env, crypto.RevealAAD(in.Name, keepsCopy), a.Random)
+	ct, err := crypto.EncryptEnvelope(encKey, env, crypto.RevealAAD(in.Name, keepsCopy), a.Random)
 	if err != nil {
 		return SendOutput{}, err
 	}
@@ -496,7 +531,7 @@ func (a *Agent) Send(ctx context.Context, in SendInput) (SendOutput, error) {
 		a.log(Event{Event: "send_secret", Name: in.Name, Result: "relay_error", Detail: a.safeErr(err)})
 		return SendOutput{}, err
 	}
-	r := link.Reveal{ID: created.ID, RevealToken: created.RevealToken, Key: key[:], Name: in.Name, KeepsCopy: keepsCopy}
+	r := link.Reveal{ID: created.ID, RevealToken: created.RevealToken, Key: key[:], Name: in.Name, KeepsCopy: keepsCopy, Salt: salt}
 	if a.Relay.Origin != a.PageOrigin {
 		r.Relay = a.Relay.Origin
 	}
@@ -510,8 +545,8 @@ func (a *Agent) Send(ctx context.Context, in SendInput) (SendOutput, error) {
 			keepsCopy = true
 		}
 	}
-	a.log(Event{Event: "send_secret", Name: in.Name, DropID: created.ID, Result: "created", Fields: map[string]string{"keeps_copy": fmt.Sprint(keepsCopy), "expires_at": created.ExpiresAt.UTC().Format(time.RFC3339)}})
-	out := SendOutput{RequestID: created.ID, Link: url, ExpiresAt: created.ExpiresAt.UTC(), KeepsCopy: keepsCopy}
+	a.log(Event{Event: "send_secret", Name: in.Name, DropID: created.ID, Result: "created", Fields: map[string]string{"keeps_copy": fmt.Sprint(keepsCopy), "expires_at": created.ExpiresAt.UTC().Format(time.RFC3339), "password": fmt.Sprint(salt != nil)}})
+	out := SendOutput{RequestID: created.ID, Link: url, ExpiresAt: created.ExpiresAt.UTC(), KeepsCopy: keepsCopy, PasswordProtected: salt != nil}
 	out.Message = sendMessage(out, in.Name)
 	return out, nil
 }

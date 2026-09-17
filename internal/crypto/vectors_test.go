@@ -72,17 +72,29 @@ type tokenVector struct {
 	Valid bool   `json:"valid"`
 }
 
+// passwordVector covers section 4.1: Argon2id with the interactive
+// parameters, then BLAKE2b-256 over domain || link key || password key.
+type passwordVector struct {
+	Name        string `json:"name"`
+	Password    string `json:"password"`
+	Salt        string `json:"salt"`
+	LinkKey     string `json:"link_key"`
+	PasswordKey string `json:"password_key"`
+	Key         string `json:"key"`
+}
+
 type vectors struct {
-	Version     int            `json:"version"`
-	Description string         `json:"description"`
-	PadBlock    int            `json:"pad_block"`
-	Sealed      []sealedVector `json:"sealed_box"`
-	AEAD        []aeadVector   `json:"xchacha20poly1305"`
-	Padding     []padVector    `json:"padding"`
-	Fingerprint []fpVector     `json:"fingerprint"`
-	Envelope    []envVector    `json:"envelope"`
-	RevealAAD   []aadVector    `json:"reveal_aad"`
-	Tokens      []tokenVector  `json:"tokens"`
+	Version     int              `json:"version"`
+	Description string           `json:"description"`
+	PadBlock    int              `json:"pad_block"`
+	Sealed      []sealedVector   `json:"sealed_box"`
+	AEAD        []aeadVector     `json:"xchacha20poly1305"`
+	Padding     []padVector      `json:"padding"`
+	Fingerprint []fpVector       `json:"fingerprint"`
+	Envelope    []envVector      `json:"envelope"`
+	RevealAAD   []aadVector      `json:"reveal_aad"`
+	Tokens      []tokenVector    `json:"tokens"`
+	Password    []passwordVector `json:"reveal_password"`
 }
 
 // detReader yields a deterministic byte stream from a seed (SHA-256 counter
@@ -242,6 +254,32 @@ func generate(t *testing.T) vectors {
 		h := HashToken(tk.s)
 		v.Tokens = append(v.Tokens, tokenVector{Token: tk.s, Hash: h.Encode(), Valid: tk.valid})
 	}
+	// Password-protected reveals: the salt and the link key come from the
+	// deterministic reader so the derivation can be checked everywhere.
+	for _, pw := range []struct{ name, password string }{
+		{"ascii passphrase", "correct horse battery staple"},
+		{"unicode password", "päss wörd 密码"},
+		{"short password", "hunter22"},
+	} {
+		rd := &detReader{seed: []byte("burndrop-password-seed-" + pw.name)}
+		salt, err := NewSalt(rd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		linkKey, err := NewSymmetricKey(rd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pk, err := PasswordKey([]byte(pw.password), salt)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := RevealKeyWithPassword(linkKey, []byte(pw.password), salt)
+		if err != nil {
+			t.Fatal(err)
+		}
+		v.Password = append(v.Password, passwordVector{Name: pw.name, Password: pw.password, Salt: enc(salt), LinkKey: enc(linkKey[:]), PasswordKey: enc(pk[:]), Key: enc(key[:])})
+	}
 	return v
 }
 
@@ -347,6 +385,25 @@ func TestVectors(t *testing.T) {
 		}
 		if HashToken(tk.Token).Encode() != tk.Hash {
 			t.Fatalf("token hash mismatch for %q", tk.Token)
+		}
+	}
+	if len(v.Password) == 0 {
+		t.Fatal("reveal_password vectors missing")
+	}
+	for _, p := range v.Password {
+		salt := dec(t, p.Salt)
+		linkKey, _ := KeyFromBytes(dec(t, p.LinkKey))
+		pk, err := PasswordKey([]byte(p.Password), salt)
+		if err != nil || enc(pk[:]) != p.PasswordKey {
+			t.Fatalf("%s: password key mismatch: %v", p.Name, err)
+		}
+		key, err := RevealKeyWithPassword(linkKey, []byte(p.Password), salt)
+		if err != nil || enc(key[:]) != p.Key {
+			t.Fatalf("%s: reveal key mismatch: %v", p.Name, err)
+		}
+		wrong, err := RevealKeyWithPassword(linkKey, []byte(p.Password+"x"), salt)
+		if err != nil || enc(wrong[:]) == p.Key {
+			t.Fatalf("%s: a wrong password derived the same key", p.Name)
 		}
 	}
 	// Regenerating must be deterministic.

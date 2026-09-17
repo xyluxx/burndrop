@@ -145,7 +145,7 @@ internal/relay          config, stores, handlers, rate limits, headers
 internal/client         Go relay client with long polling
 internal/storage        backend interface, index, manager, twelve backends
 internal/agent          request, fetch, send, run, audit, redaction, config
-internal/mcpserver      the seven MCP tools
+internal/mcpserver      the eight MCP tools
 web                     drop page source, build, unit and end-to-end tests
 extension               browser extension
 sdk/python, sdk/typescript

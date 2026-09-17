@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from . import crypto
 from .link import normalize_origin, parse_drop, parse_reveal
+from .password import reveal_key_with_password
 from .relay import RelayClient
 
 __all__ = ["HumanError", "open", "submit"]
@@ -55,21 +56,34 @@ def open(
     *,
     relay: str | None = None,
     client_name: str | None = None,
+    password: str | None = None,
 ) -> bytes:
     """Open a reveal link once and return the value.
 
     The relay deletes the ciphertext when it is handed out, so a second call
-    fails with a ``gone`` relay error.
+    fails with a ``gone`` relay error. A link that carries a salt needs the
+    reveal password the human set; it is derived before the relay is asked,
+    so a missing password never burns the secret.
     """
     reveal, page_origin = parse_reveal(link)
     origin = normalize_origin(relay) if relay else reveal.relay_origin(page_origin)
     client = RelayClient(origin, client_name=client_name)
+    key = reveal.key
+    if reveal.password_protected:
+        if password is None:
+            raise HumanError("this link needs the reveal password the human set; pass password=...")
+        key = reveal_key_with_password(reveal.key, password, reveal.salt)
     ciphertext, _created_at = client.open(reveal.id, reveal.reveal_token)
     try:
-        envelope = crypto.decrypt_envelope(reveal.key, ciphertext, reveal.aad())
+        envelope = crypto.decrypt_envelope(key, ciphertext, reveal.aad())
     except crypto.CryptoError as err:
+        why = (
+            "wrong reveal password or altered link"
+            if reveal.password_protected
+            else "the link was altered or the relay returned the wrong data"
+        )
         raise HumanError(
-            "the secret could not be decrypted: the link was altered or the relay returned "
-            "the wrong data; the relay copy is gone, ask the agent to send it again"
+            f"the secret could not be decrypted: {why}; the relay copy is gone, "
+            "ask the agent to send it again"
         ) from err
     return envelope.secret_bytes()

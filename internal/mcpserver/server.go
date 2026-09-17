@@ -24,6 +24,10 @@ type Options struct {
 	// ConfirmSend asks the human through elicitation before send_secret
 	// creates a link, when the client supports it. Default true.
 	ConfirmSend *bool
+	// ApplyRevealPassword persists a change of the reveal password
+	// requirement (the CLI writes the config file). When nil, the change
+	// applies to the running agent only.
+	ApplyRevealPassword func(required bool) error
 }
 
 // New builds the MCP server around an agent.
@@ -33,7 +37,7 @@ func New(a *agent.Agent, opts Options) *mcp.Server {
 	}
 	confirm := opts.ConfirmSend == nil || *opts.ConfirmSend
 	s := mcp.NewServer(&mcp.Implementation{Name: ServerName, Title: "burndrop secret exchange", Version: opts.Version}, &mcp.ServerOptions{Instructions: Instructions})
-	h := &handlers{agent: a, confirmSend: confirm}
+	h := &handlers{agent: a, confirmSend: confirm, applyRevealPassword: opts.ApplyRevealPassword}
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "request_secret",
@@ -52,7 +56,7 @@ func New(a *agent.Agent, opts Options) *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "send_secret",
 		Title:       "Send a secret to a human",
-		Description: "Create a one-time link that reveals a stored secret to a human once. Only secrets marked sendable can be sent. The human may be asked to confirm first. Relay the returned message verbatim.",
+		Description: "Create a one-time link that reveals a stored secret to a human once. Only secrets marked sendable can be sent. The human may be asked to confirm first. When the human has turned on their reveal password, the page asks for it before showing the value. Relay the returned message verbatim.",
 		Annotations: &mcp.ToolAnnotations{Title: "Send a secret", DestructiveHint: boolPtr(true), OpenWorldHint: boolPtr(true)},
 	}, h.sendSecret)
 
@@ -84,14 +88,62 @@ func New(a *agent.Agent, opts Options) *mcp.Server {
 		Annotations: &mcp.ToolAnnotations{Title: "Revoke a request", DestructiveHint: boolPtr(true), IdempotentHint: true, OpenWorldHint: boolPtr(true)},
 	}, h.revokeRequest)
 
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "reveal_password",
+		Title:       "Reveal password setting",
+		Description: "Report or change whether reveal links ask the human for their reveal password before showing a value. The password itself is set by the human in a terminal (burndrop reveal-password set) and never passes through this tool or the conversation.",
+		Annotations: &mcp.ToolAnnotations{Title: "Reveal password", DestructiveHint: boolPtr(false), IdempotentHint: true, OpenWorldHint: boolPtr(false)},
+	}, h.revealPassword)
+
 	return s
 }
 
 func boolPtr(b bool) *bool { return &b }
 
 type handlers struct {
-	agent       *agent.Agent
-	confirmSend bool
+	agent               *agent.Agent
+	confirmSend         bool
+	applyRevealPassword func(required bool) error
+}
+
+// RevealPasswordInput is the reveal_password tool input.
+type RevealPasswordInput struct {
+	Required *bool `json:"required,omitempty" jsonschema:"true to make every reveal link ask for the password, false to stop; omit to only report the current setting"`
+}
+
+// RevealPasswordStatus is the reveal_password tool output.
+type RevealPasswordStatus struct {
+	Required   bool   `json:"required"`
+	Configured bool   `json:"configured"`
+	Message    string `json:"message"`
+}
+
+func (h *handlers) revealPassword(_ context.Context, _ *mcp.CallToolRequest, in RevealPasswordInput) (*mcp.CallToolResult, RevealPasswordStatus, error) {
+	if in.Required != nil {
+		var err error
+		if h.applyRevealPassword != nil {
+			err = h.applyRevealPassword(*in.Required)
+		} else {
+			err = h.agent.Config.SetRevealPasswordRequired(*in.Required)
+		}
+		if err != nil {
+			return nil, RevealPasswordStatus{}, h.fail(err)
+		}
+	}
+	return nil, revealPasswordStatus(h.agent.Config), nil
+}
+
+func revealPasswordStatus(cfg agent.Config) RevealPasswordStatus {
+	st := RevealPasswordStatus{Required: cfg.RevealPasswordRequired, Configured: cfg.RevealPassword != ""}
+	switch {
+	case st.Required:
+		st.Message = "Reveal links ask for the reveal password before they show a value. Remind the human to type the password they set; never ask them for it."
+	case st.Configured:
+		st.Message = "A reveal password is set but not required right now, so reveal links open without it. Call reveal_password with required true to turn it on."
+	default:
+		st.Message = "No reveal password is set. If the human wants one, they run burndrop reveal-password set in a terminal (the password never goes through the chat); that also turns the requirement on."
+	}
+	return st
 }
 
 // fail turns an error into a tool error with known values redacted.

@@ -185,6 +185,17 @@ func (k *Keychain) SetRaw(user, value string) error {
 	return wrapKeyring(keyring.Set(k.service, user, value))
 }
 
+// DeleteRaw removes one named string entry; a missing entry is not an error.
+func (k *Keychain) DeleteRaw(user string) error {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	err := wrapKeyring(keyring.Delete(k.service, user))
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	return err
+}
+
 func wrapKeyring(err error) error {
 	switch {
 	case err == nil:

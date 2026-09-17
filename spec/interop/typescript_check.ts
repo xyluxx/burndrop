@@ -18,6 +18,7 @@ import {
   CryptoError,
   KEY_SIZE,
   NONCE_SIZE,
+  SALT_SIZE,
   PAD_BLOCK,
   commitment,
   decodeBase64Url,
@@ -28,6 +29,7 @@ import {
   openSealed,
   publicKeyFromPrivate,
   revealAad,
+  revealKeyWithPassword,
   secretBytes,
   unpad,
   type Envelope,
@@ -147,7 +149,15 @@ async function checkDrop(c: Case): Promise<string[]> {
 }
 
 async function checkReveal(c: Case): Promise<string[]> {
-  const key = field(c, "key", KEY_SIZE);
+  const linkKey = field(c, "key", KEY_SIZE);
+  let key = linkKey;
+  if (c.salt !== undefined) {
+    const salt = field(c, "salt", SALT_SIZE);
+    if (typeof c.password !== "string") {
+      throw new Failure("password must be a string when salt is present");
+    }
+    key = await revealKeyWithPassword(linkKey, c.password, salt);
+  }
   const nonce = field(c, "nonce", NONCE_SIZE);
   const displayName = c.display_name;
   const keepsCopy = c.keeps_copy;
@@ -183,6 +193,20 @@ async function checkReveal(c: Case): Promise<string[]> {
   }
   if (flippedOpened) {
     throw new Failure("blob decrypts with keeps_copy flipped; the display fields are not bound");
+  }
+  if (key !== linkKey) {
+    let plainKeyOpened = false;
+    try {
+      await decryptAead(linkKey, blob, aad);
+      plainKeyOpened = true;
+    } catch (err) {
+      if (!(err instanceof CryptoError)) {
+        throw err;
+      }
+    }
+    if (plainKeyOpened) {
+      throw new Failure("blob decrypts with the link key alone; the password is not mixed in");
+    }
   }
   return notes;
 }

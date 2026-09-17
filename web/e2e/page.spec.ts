@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { api, c, createDrop, createReveal, dropState, fetchDrop, randomToken, revealState, uploadAsPage } from "./helpers.js";
 import { buildDropLink, buildRevealLink } from "../src/link.js";
+import * as b64 from "../src/base64.js";
 
 /** watch collects page errors, console errors, and API request URLs. */
 function watch(page: Page): { errors: string[]; requests: string[] } {
@@ -282,6 +283,45 @@ test.describe("reveal page", () => {
     await visit(page, revoked.link);
     await expect(main(page)).toHaveAttribute("data-state", "revoked");
     await expect(page.locator("#reveal-panel")).toBeHidden();
+  });
+
+  test("asks for the reveal password and forgives a wrong one", async ({ page, baseURL }) => {
+    const base = baseURL!;
+    await c.ready();
+    const linkKey = c.newSymmetricKey();
+    const salt = c.randomBytes(c.SALT_SIZE);
+    const key = c.revealKeyWithPassword(linkKey, "correct horse battery staple", salt);
+    const blob = c.encryptEnvelope(key, { v: 1, type: "reveal", name: "signing-key", format: "text", secret: "sk-signing-42" }, c.revealAad("signing-key", true));
+    const created = await api(base, "/api/v1/reveals", { ttl_seconds: 600, ciphertext: b64.encode(blob) });
+    const id = created.body["drop_id"] as string;
+    const revealToken = created.body["reveal_token"] as string;
+    const link = buildRevealLink(base, { relay: null, id, revealToken, key: linkKey, name: "signing-key", keepsCopy: true, salt });
+
+    await visit(page, link);
+    await expect(main(page)).toHaveAttribute("data-state", "ready");
+    await expect(page.locator("#password")).toBeVisible();
+    await expect(page.locator("#state-text")).toContainText("reveal password");
+    await settled(page);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+    // Nothing happens without a password, and the relay copy is untouched.
+    await page.locator("#reveal").click();
+    await expect(page.locator("#status")).toHaveText(/Enter the reveal password/);
+    expect(await revealState(base, id)).toBe("created");
+
+    // A wrong password burns the relay copy but the page keeps the ciphertext.
+    await page.locator("#password").fill("not it");
+    await page.locator("#password").press("Enter");
+    await expect(page.locator("#state-text")).toContainText("Wrong password", { timeout: 30_000 });
+    await expect(main(page)).toHaveAttribute("data-state", "ready");
+    expect(await revealState(base, id)).toBe("opened");
+
+    await page.locator("#password").fill("correct horse battery staple");
+    await page.locator("#reveal").click();
+    await expect(main(page)).toHaveAttribute("data-state", "revealed", { timeout: 30_000 });
+    await expect(page.locator("#value")).toHaveValue("sk-signing-42");
+    await expect(page.locator("#password-panel")).toBeHidden();
+    await expect(page.locator("#password")).toHaveValue("");
   });
 
   test("keyboard: tab to the button and press Enter", async ({ page, baseURL }) => {

@@ -28,12 +28,23 @@ type app struct {
 	version string
 	now     func() time.Time
 	// keychainGet reads the agent key from the credential store.
-	keychainGet func(service, entry string) (string, error)
-	keychainSet func(service, entry, value string) error
+	keychainGet    func(service, entry string) (string, error)
+	keychainSet    func(service, entry, value string) error
+	keychainDelete func(service, entry string) error
 	// isTerminal reports whether stdin is interactive (for prompts).
 	isTerminal func() bool
 	// readSecret reads a line without echo when interactive.
 	readSecret func(prompt string) ([]byte, error)
+	// lines buffers stdin once, so consecutive prompts do not lose input.
+	lines *bufio.Reader
+}
+
+// reader returns the shared buffered reader over stdin.
+func (a *app) reader() *bufio.Reader {
+	if a.lines == nil {
+		a.lines = bufio.NewReader(a.stdin)
+	}
+	return a.lines
 }
 
 func newApp(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) string) *app {
@@ -51,6 +62,12 @@ func newApp(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) strin
 		}
 		return kc.SetRaw(entry, value)
 	}
+	a.keychainDelete = func(service, entry string) error {
+		if service != agent.AppName {
+			return fmt.Errorf("keychain service %q is not supported; use %s", service, agent.AppName)
+		}
+		return kc.DeleteRaw(entry)
+	}
 	a.isTerminal = func() bool {
 		f, ok := stdin.(*os.File)
 		return ok && term.IsTerminal(int(f.Fd()))
@@ -62,7 +79,7 @@ func newApp(stdin io.Reader, stdout, stderr io.Writer, getenv func(string) strin
 			fmt.Fprintln(stderr)
 			return b, err
 		}
-		line, err := bufio.NewReader(stdin).ReadString('\n')
+		line, err := a.reader().ReadString('\n')
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
@@ -85,6 +102,7 @@ Agent side:
   pending         list outstanding requests
   revoke          revoke a pending request
   audit           show the audit log
+  reveal-password set, turn on or off, or clear the password that reveal links ask for
 
 Human side (terminal alternative to the drop page):
   drop            submit a secret for a drop link
@@ -137,6 +155,8 @@ func (a *app) run(args []string) int {
 		err = a.cmdRevoke(ctx, rest)
 	case "audit":
 		err = a.cmdAudit(ctx, rest)
+	case "reveal-password":
+		err = a.cmdRevealPassword(ctx, rest)
 	case "drop":
 		err = a.cmdDrop(ctx, rest)
 	case "open":
@@ -288,6 +308,9 @@ func (a *app) load(needKey bool) (*loaded, error) {
 	}
 	ag := agent.New(cfg, rc, manager, audit)
 	ag.Now = a.now
+	if cfg.RevealPassword != "" {
+		ag.PasswordSource = func() ([]byte, error) { return cfg.ResolveRevealPassword(a.getenv, a.keychainGet) }
+	}
 	return &loaded{paths: paths, cfg: cfg, agent: ag, relay: rc, keySrc: src}, nil
 }
 
@@ -309,7 +332,7 @@ func (a *app) readValue(file string) ([]byte, error) {
 		return b, nil
 	}
 	if !a.isTerminal() {
-		b, err := io.ReadAll(io.LimitReader(a.stdin, storage.MaxValueBytes+1))
+		b, err := io.ReadAll(io.LimitReader(a.reader(), storage.MaxValueBytes+1))
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +352,7 @@ func (a *app) confirm(prompt string, yes bool) (bool, error) {
 		return false, errors.New("confirmation needed; pass -yes when not running interactively")
 	}
 	fmt.Fprint(a.stderr, prompt+" [y/N] ")
-	line, err := bufio.NewReader(a.stdin).ReadString('\n')
+	line, err := a.reader().ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return false, err
 	}

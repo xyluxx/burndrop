@@ -77,7 +77,10 @@ Checks run in order: `paths`, `config`, `config mode`, `agent key`, `relay origi
 | `the human declined to send this secret` | The elicitation prompt was answered with no, cancel, or dismiss | Nothing to fix; the audit log shows `declined_by_human` |
 | `this link was already used or revoked (state: opened)` (`burndrop open`) or the page's `This secret was already revealed` | The reveal was opened once already | If that was not you, tell the agent to rotate the secret and send it again |
 | `the secret could not be decrypted: the link was altered or the relay returned the wrong data; the relay copy is gone, ask the agent to send it again` | The key or the display fields in the link were altered, so authentication failed after the relay deleted its copy | Ask the agent to send again; do not reuse the altered link |
-| `cancelled; the secret is still on the relay until <time>` | `open` was answered with no | Open it before the printed time or let it expire |
+| `cancelled; the secret is still on the relay until <time>` | `open` was answered with no, or a link that needs the reveal password got an empty password | Open it before the printed time or let it expire |
+| `reveal links must carry a password but none is set; the human runs: burndrop reveal-password set` | `reveal_password_required` is on but the config names no password, or the credential store entry is gone | Run `burndrop reveal-password set` in a terminal, or turn the requirement off with `burndrop reveal-password off` (or by asking the agent) |
+| `no reveal password is set; run: burndrop reveal-password set` | The requirement was turned on (CLI or the `reveal_password` tool) without a stored password | Set one with `burndrop reveal-password set`; the password cannot be given through the chat |
+| The page says `Wrong password. The link has been used now, so keep this page open and try again here.` | The reveal password typed on the page does not match the one the agent used; the relay copy is already gone | Type it again on the same page (the ciphertext is kept in memory there); if the page is closed, ask the agent to send it again |
 
 ## Storage backends
 

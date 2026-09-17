@@ -1,17 +1,17 @@
 {
   "version": 1,
   "producer": "typescript",
-  "library": "burndrop-typescript 0.1.0, libsodium-wrappers 0.8.4 (libsodium 1.0.22)",
-  "generated_at": "2026-09-17T12:37:04Z",
+  "library": "burndrop-typescript 0.1.0, libsodium-wrappers-sumo 0.8.4 (libsodium 1.0.22)",
+  "generated_at": "2026-09-17T18:15:09Z",
   "drops": [
     {
       "name": "drop text",
-      "recipient_public_key": "hqCEWlRFe5Z12MAuwu5V8rC7RxmfG0R6cF2Kvi7_m00",
-      "recipient_secret_key": "wcoYcA02_s5ailDR-DtSyo5qadTt-uJYsJNfyACM3Gs",
-      "fingerprint": "af1e-bda4-d349-1eb9",
-      "commitment": "rx69pNNJHrnD26oFxQzIbUjeWDU7Z-7QzYxdpTm5H-8",
-      "sealed": "x7c0wKBP-2MWY-iBCPVr9desl0pw-xyiuXu20l73jhfloNGGcMkZd-Q1fmz8ARxITeQniq_dqoFw5Yi8zms-q_QIrS5BcsEm1TJ7fUC3HH3pagI_gQxe5wojC0a-fwoUSMKiSBbbj6kP5t3olItA0g8_EMX23cwXD7wRVFKlA6IyK5peZ-wDVNP6fgmKep3WTuP841wX0ykXsQS-Io_3ACdgeYe6dL_i1VyKRnzUifvgIOR1_O4yQvRwHRarl2XtPW0Ih6hmdEBP7PgfaxLWWIvv0-gVGTkrtYI0u0gEIBCh_hVzBd54QxRmQHcNXgS_bweOvAt9v9PimGDxMeId8autfR23NgJzsS9KvIvb1MNu6oMHWqjfSxnj3miP4p1poHh1wAFf67m498KbcU8F9g",
-      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJvcGVuYWktYXBpLWtleSIsInB1cnBvc2UiOiJDYWxsIHRoZSBPcGVuQUkgQVBJIGZyb20gdGhlIGJpbGxpbmcgc2NyaXB0Iiwic3RvcmFnZSI6Im1hY09TIEtleWNoYWluIiwicmV0ZW50aW9uIjoidW50aWwtcmV2b2tlZCIsImZpbmdlcnByaW50IjoiYWYxZS1iZGE0LWQzNDktMWViOSIsImZvcm1hdCI6InRleHQiLCJzZWNyZXQiOiJzay10ZXN0LTAxMjM0NTY3ODlhYmNkZWYifQ",
+      "recipient_public_key": "gLW4EAFBNh_cPRvGDWSPmyc2x2gWms2eNn4v35HQTnM",
+      "recipient_secret_key": "rezCh52hh2YKGHNEAjT9HYPfR68SdRQ5qpxM3czo84w",
+      "fingerprint": "3841-1471-468b-1c21",
+      "commitment": "OEEUcUaLHCHQzx2PxjQq-KNfrBdmXZGCtnvfWRuICOg",
+      "sealed": "fTZ6lQ_sYlVyAXj0dUn0P7eKqMjTPaVtFaRJkpLRgnQbXli7VSyF0AidWcXg4UvR3C7d-JFyGlc6nEeSnzSw6o95JhcsMqzucFqgvNwbNvcuulTxxG2AF3c0hCJEOtdd-PKsQvOQKKVxj4-7vZNVsAA7MSjBhdzuCZ6kpqsJwCoXSM4nOTPN6f1uqgsE3eNnPF0ditEhhcoXNQ5l493yET9-EpltP6xxQxuL6NU4uYM3bKUFC3Ut-xFXsf3JP-nxnsMOQ0ePXjztgMj0JAw2p7vGnNVU-Ib8bFQSu1V1-eZ3vrNwfI6Io7WLgFiFmFSE_t54Nak7e24r9x3SK5PJ5L6ecHq7DdHv5vomVcq1EGlmK_VVv0-IcMV3xxCiGWuVaQu705zPq-aPK0zDY6hdng",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJvcGVuYWktYXBpLWtleSIsInB1cnBvc2UiOiJDYWxsIHRoZSBPcGVuQUkgQVBJIGZyb20gdGhlIGJpbGxpbmcgc2NyaXB0Iiwic3RvcmFnZSI6Im1hY09TIEtleWNoYWluIiwicmV0ZW50aW9uIjoidW50aWwtcmV2b2tlZCIsImZpbmdlcnByaW50IjoiMzg0MS0xNDcxLTQ2OGItMWMyMSIsImZvcm1hdCI6InRleHQiLCJzZWNyZXQiOiJzay10ZXN0LTAxMjM0NTY3ODlhYmNkZWYifQ",
       "envelope": {
         "v": 1,
         "type": "drop",
@@ -21,18 +21,18 @@
         "purpose": "Call the OpenAI API from the billing script",
         "storage": "macOS Keychain",
         "retention": "until-revoked",
-        "fingerprint": "af1e-bda4-d349-1eb9"
+        "fingerprint": "3841-1471-468b-1c21"
       },
       "secret": "c2stdGVzdC0wMTIzNDU2Nzg5YWJjZGVm"
     },
     {
       "name": "drop json characters",
-      "recipient_public_key": "D693670R4x-rHiau3HbVhMnYCWkYqV-72HebfdH22w8",
-      "recipient_secret_key": "iMoZmVR2yGeynSEQLoMZSdNX0YHcDfhFTvVrulkUSRc",
-      "fingerprint": "5ef6-965b-5310-ad92",
-      "commitment": "XvaWW1MQrZJ2LtiCqF_FZhTXPdrqTZ8wwQRZWaVmg1c",
-      "sealed": "0PlckBWQe2ryj02463DhClC8HmT4AlSejsoZTALNlgDeoM515YXVseT-hS1HUUQ5FvQxDdkQcWuRSvJhapOFd2nmFXZUH4WkXZ0b7r921WlZxpKLW8E3-vaw98B0Dvnu48oSTUMVhUpszI7AyPToLxSBqL5xf-BiLAX5Q1SmQv1CZku0Iylp9Dy-UO2HdrzRNvALA3uUMP-MnXHfaM9xqXNdrlgXUAxynN70p-lrfSAhdNFk8JMNXll1dqDoF5c5iUiWNCAzNAw949wyLdsPYTbFG2zkgptUBPUBdy6oMs1NPEhAPfxN0D5pI2AD2hyHv-FAAJLzZoKJ_MFU9PBJfQZXSDSm9ZXL4aLqVbJp0mDw7a6XgyukHECsjJ2-NYTFmSuOqqXd3yV-SWKzGIK_wlF8J-a2DvD18ka4grjM_1v9gFEoXlqaLVP_2zDIx4rqCFKAqVAOO8ph9xafw7dUDKRqJwPAnsNEwTFZVkzt2pkh9CCSuHQRK4UV-UswTJ_iZ0ginKtGl2oDgDFXIZy85UsdmEDpfaqmReH6qHpkhQK14BeJnpppxaFHoLhpKt_8dvthMtfxDw0x-x_R-BHRp5pFOtwMfl1iZMtYIMS9J6YWex-xF-iHGdX3bplAvxY5c59ptURJKFizynffjypx-xeHO10pVZRfEqK-CKlkRqERGRTb2dJUdfQNyNDmNczJ1QNcKoLkFQPgUAAXUp4jSfoKCC64FMhiffeay_ufAsg",
-      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJvcGVuYWktYXBpLWtleSIsInB1cnBvc2UiOiJMaW5lIDFcbmxpbmUgMiB3aXRoIDx0YWc-ICYgXCJxdW90ZXNcIiIsInN0b3JhZ2UiOiJ0aGUgYWdlbnQncyBwcm9jZXNzIG1lbW9yeSBvbmx5IiwicmV0ZW50aW9uIjoic2Vzc2lvbiIsImZpbmdlcnByaW50IjoiNWVmNi05NjViLTUzMTAtYWQ5MiIsImZvcm1hdCI6InRleHQiLCJzZWNyZXQiOiJww6RzcyBcInF1b3RlZFwiIDx0YWc-ICYgZG9uZSBcXCBlbmQifQ",
+      "recipient_public_key": "Z9q3eH2klNz0CgUOl7TxwyBUSDeD-pvyF2st4loM2mM",
+      "recipient_secret_key": "mgA6iLj7pi6qktGUoSEymQYD5syDqQ7QNqxorQJWeJg",
+      "fingerprint": "462e-2175-3d13-3da7",
+      "commitment": "Ri4hdT0TPacOqPk_dGhrg7BFUwopggLEsIAKBkR8zH8",
+      "sealed": "eyr_LfjQ0LDqrm5dDBD2kyXcDEKq9gn6WT5WWTeXKQAEadEF54xp8m_gcu5woN_eL60vXTKCAGeAfKWvb5NNWOYDwuwLcsIWXec_ExJqYe9xV9qJIonQ7GKc6o6AhGOBOnXmZVfK3ghg3E61TOe8g7q2iF044SbGYj2G7PBMbMqvC-svba-v7H3ubrtNMiDAIZdXspqzO3EEOAGTkSwF9K9hndTtPPvK_ThQqYXTx2I4NB96kdDoT6RA_GCE-GSOzhbNIAfTEiq7fjf_FsxlYVNJi3neyWOvLVjp3J1sbKy6PmfBrOcBxkim8MiNbadDBasvqS3ADiLehobDcXsUhnfjR622iOK_MU-T12PHIRrWPUJ23uWww4XPKKCb5ADsesMpzCTlrUw9MgXjZKL-FFfnW9zEC4XIQbtDfHmA_p15L8KTD7y52KM1zanMtUAYW-EB3t3YO5ROFBAOkON8ypKV0_5d0CvIN30bI2pOXVMzFJnURhKquJE6ji1H5RmTvkN8hSqKCBFm30IOvQMC4FlgrpnwhezwYe-TUl35dAndVKV5csgNSSAlgTY0Fqj3S7YED8FIqX5xrCQnqxULWuwdsAUOUfZV58fCTGsgd9bPLjPKMb7NEfW-tPpOqWAn-RrCiM9xSvbC23t7ZNKz6oB5LhiICjQmjZ_pliM4STq57p14jF6B7cIsnq9T0r5-l6P24D0yki1bsm6ZxDfDQfFwbV7-fni99FnmJc16ghI",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJvcGVuYWktYXBpLWtleSIsInB1cnBvc2UiOiJMaW5lIDFcbmxpbmUgMiB3aXRoIDx0YWc-ICYgXCJxdW90ZXNcIiIsInN0b3JhZ2UiOiJ0aGUgYWdlbnQncyBwcm9jZXNzIG1lbW9yeSBvbmx5IiwicmV0ZW50aW9uIjoic2Vzc2lvbiIsImZpbmdlcnByaW50IjoiNDYyZS0yMTc1LTNkMTMtM2RhNyIsImZvcm1hdCI6InRleHQiLCJzZWNyZXQiOiJww6RzcyBcInF1b3RlZFwiIDx0YWc-ICYgZG9uZSBcXCBlbmQifQ",
       "envelope": {
         "v": 1,
         "type": "drop",
@@ -42,18 +42,18 @@
         "purpose": "Line 1\nline 2 with <tag> & \"quotes\"",
         "storage": "the agent's process memory only",
         "retention": "session",
-        "fingerprint": "5ef6-965b-5310-ad92"
+        "fingerprint": "462e-2175-3d13-3da7"
       },
       "secret": "cMOkc3MgInF1b3RlZCIgPHRhZz4gJiBkb25lIFwgZW5k"
     },
     {
       "name": "drop binary",
-      "recipient_public_key": "M27XpWl64xwZ5I-4_sD3DGvBnjnR-59JKYSGzQDI3TA",
-      "recipient_secret_key": "gGKCflobIj6WEE6aX_oElw6u3qbtxLcgbbtbjuBCH14",
-      "fingerprint": "5ac7-0aa1-4189-74e3",
-      "commitment": "WscKoUGJdOM6euO1Fd79Q7Pplg9vXWPLcfuQl3_X2EQ",
-      "sealed": "JBMatIB44uDaKc57SxD_nrCd3I1ICTJvQ-s1BkUm8wDAW-nQwUL51BuE0HMmQY01V-dcqUFKpNmDbIxZy3feasCwavaLzcpspfqEYk7TWFBlSsdLwfD9KcuedoEZXf0UtlBkflIfOxmBrVXxim6opOOdYBlhiPx2jhe1c8PLcUiAhvavuPFnIImNfcg2Sw_LZt046Qmz5MlBkldtFdZ6jxcNt6cEkFYJANM_5z-5b4fvo-MmPxNh2V8A3pWB3tsEba0K8p9DbY22-YDl1grum5PPMI5GureTZTrx7JpdtHohnwaQqspd_RQJjugWaT5T3345iJ3iHaKn7Zx1Dv5Uz7B0qm0jfRKiOo-Gg14KngCKmohIHytGZV6hDm83tirP0g3N9nVCN9YX6n0DgmIMCkD04JRhageZkAkoGPIaSQa0VQkcygeiDNRuLoCIYdqlgh3vNCWjOf9Z_4nHRqfJSaQMrrn2lnBvUORMeNV0ZYuYFdQJul4oFLxKm4N3GnS0FnSXokuSXocVNCSVINQ5Q35WTOa2lyka89PBO2QLaBXspNQK_slaqx_BcD-PAcIQd4zGiZQ0FByCcUGG01vm39BM6r2r1bbU81aG0rPDvwBuyz1lmNX7txPwc8Ug2S79p0kwl0t26i-Y-zE_1s1bN95m5X0bHxVEh644cfwtp14yhlhJ-XIT1cys3VncfrHaHd7HDKSgV6AU89gXp96kmsrN2H4qopruOOUe5O0qH_c",
-      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJjbGllbnQtY2VydCIsInB1cnBvc2UiOiJDYWxsIHRoZSBPcGVuQUkgQVBJIGZyb20gdGhlIGJpbGxpbmcgc2NyaXB0Iiwic3RvcmFnZSI6ImFuIGVuY3J5cHRlZCB2YXVsdCBmaWxlIG9uIHRoZSBhZ2VudCdzIG1hY2hpbmUiLCJyZXRlbnRpb24iOiJ1bnRpbDoyMDMwLTAxLTAxVDAwOjAwOjAwWiIsImZpbmdlcnByaW50IjoiNWFjNy0wYWExLTQxODktNzRlMyIsImZvcm1hdCI6ImJhc2U2NCIsInNlY3JldCI6IkFBRUNBX3I3X1AzLV93In0",
+      "recipient_public_key": "UXvW6V-P-l3-zaKBQiGdk73La-3ROwBYHiyKSH12awk",
+      "recipient_secret_key": "tE_L72AE1NzqJmkXQxzwr8VFDhNVwZNnon8KV-dlZLw",
+      "fingerprint": "3911-8496-8e57-3500",
+      "commitment": "ORGElo5XNQDLVLadNLXqS9h4WG-8iitxJgHMZQmBKI0",
+      "sealed": "Dfcefo2Na7Quf1zOOOHFAI8wV56htg910RpsM_6IiTw5CL0hs-qwbx4KIsdrgYzC5jbbqu0ZcBubzw5C8rwPuwy7fADsJmnb1WJAetG4Lq1UbQairiD1MLgM0qjMvs8xm6MXj529eNymW-1tRoSsO54ccv3GyZlEARyC3nJyUBOLuaF1HmlGVUlPezmS_SAETUemDnnsP6CdlgiqWRkVy1DMAxU_f6m5XpucrwDJjyoBdb0dXtim-Wewe19yjLrriBGZSARgtJPxXLpHOaqZyyEkOzZOyokACFs7miDBZPNSQ9iqCHeXLhbaWwGaqcXnGJyyaz5oU9GCRKvWzMlx6DL18pyGOgTqmBiqJ9_woZG1NDPA-cEbToGKb37lZgeV3ANMv8galEK6ohbjqYOB4tjKfEyG5xyB3uW-wr7T9gPs6vi3o-p6-teZ9JNLtB_E8VShdgrC7EB1W-NXVYGblVY8f5E_8_XaelQFSxyi16fb-TLx4BPz9HE4SSaIKr0WpLnlFjq-n6IlHHU2EZB3GKmL5Bsv1sEnA0VnjhDHHssz0p12egl8M8mX5PBvV3Ey84_g-Tq95sgJR_gX1IgKs2_S_nlnyz8uCwELrxwY10U7L7sv0-ZGtnFuQFTeRcouSN1Fd8J6v0K13UnO_zrpwUKpEY9_ivHM-8jPHN3_FropgZqcggMHn0SXWKYrqDOF8oZKi48196GMrMC76WYBjxqB8pYUvGlhDJJsYCJ-0cw",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJjbGllbnQtY2VydCIsInB1cnBvc2UiOiJDYWxsIHRoZSBPcGVuQUkgQVBJIGZyb20gdGhlIGJpbGxpbmcgc2NyaXB0Iiwic3RvcmFnZSI6ImFuIGVuY3J5cHRlZCB2YXVsdCBmaWxlIG9uIHRoZSBhZ2VudCdzIG1hY2hpbmUiLCJyZXRlbnRpb24iOiJ1bnRpbDoyMDMwLTAxLTAxVDAwOjAwOjAwWiIsImZpbmdlcnByaW50IjoiMzkxMS04NDk2LThlNTctMzUwMCIsImZvcm1hdCI6ImJhc2U2NCIsInNlY3JldCI6IkFBRUNBX3I3X1AzLV93In0",
       "envelope": {
         "v": 1,
         "type": "drop",
@@ -63,7 +63,7 @@
         "purpose": "Call the OpenAI API from the billing script",
         "storage": "an encrypted vault file on the agent's machine",
         "retention": "until:2030-01-01T00:00:00Z",
-        "fingerprint": "5ac7-0aa1-4189-74e3"
+        "fingerprint": "3911-8496-8e57-3500"
       },
       "secret": "AAECA_r7_P3-_w"
     }
@@ -71,12 +71,12 @@
   "reveals": [
     {
       "name": "reveal text",
-      "key": "FprONrw6NA3GFdlWne-VHUOFL1f31A3wG_Kq5Dd7aJA",
-      "nonce": "vkd1d8MYsOUu1DmoOZF4ZxJ-Hr9Oem4j",
+      "key": "tS-PNqrFr0G9jW6jArHmtTHn6jB8XULcu7U7KTWeifI",
+      "nonce": "SUicNQ6uYoxvdXetM8l4lHhgjJXaopf-",
       "display_name": "staging-db-url",
       "keeps_copy": true,
       "aad": "YnVybmRyb3AvcmV2ZWFsL3YxCnN0YWdpbmctZGItdXJsCjE",
-      "blob": "vkd1d8MYsOUu1DmoOZF4ZxJ-Hr9Oem4jEj76ewq8P-Ri-ZBAfPTeMZZkaDucYJcyCj3B3de2MbZnOIb4GFZ8l-rknUODQkptoDRX-TIwmmdqDq0iDWdpU8H4gd-UhyVeyaTftgN3lashoNfnF2HzWpJ8I1gjIxCXOjqk1pN1INHj1gYfuPzx904xA35qP84nmYZnkuzJzdrCndF96YLmvwTiiPlWuw2ERj18rnN3QFbVta6QKKlyVGMVx3-r5S4sKNaxZTwdikm2uLivjft6eg-eWbNyFZ4H31KAzqQbekBDepAYmvhyGuVgTdsG1O8LJO4vmYXODe3AsJn3R-HHy4m-u-AxTMKMD-wTGNsAdWXMB2n9j1h0ENwwFpkdNZqAXkR8ILScDI8",
+      "blob": "SUicNQ6uYoxvdXetM8l4lHhgjJXaopf-GOPw07L1t3e9Xa6FgtVgWLKaq19q4I4R1fWnAbpXS4POIHswSqJE7pJVbCSraBadDdBKkg7B4WPNpDjfT7JD8yaIO-kUVltbUnqNDc1PfIiE8QLRT88cnD5HbvPOkO2WqkSSVP-IMkh1N84CKz18xXq2IcsnKFI9EPiBtcXKIh8Whd0iNyJx6cMj-9bHYFdmLrvr_iEUSbGOAGwWkX38Ma-6Ke_woDVh6NaVnKQaMSGFu39oV4LRjBs3Y5zLHUxbjB5SLvoc18ozpJ2x4-_JEY5MZSkGa1bUKKol_ssbl5hJiV_10iBBKQOuFKyZ8QQmTDsxBL3LCxqKVlD5r85aEkaKWRrqzYPBUtvoQ1Of9W0",
       "plaintext": "eyJ2IjoxLCJ0eXBlIjoicmV2ZWFsIiwibmFtZSI6InN0YWdpbmctZGItdXJsIiwiZm9ybWF0IjoidGV4dCIsInNlY3JldCI6InBvc3RncmVzOi8vYXBwOnMzY3JldEBkYi5zdGFnaW5nLmV4YW1wbGU6NTQzMi9hcHAifQ",
       "envelope": {
         "v": 1,
@@ -89,12 +89,12 @@
     },
     {
       "name": "reveal binary no copy",
-      "key": "B7N7s8payzvw0b7V3KnH8YvX3aNIpzquY7SeMaM3QFw",
-      "nonce": "7hxrZWnTvV8aSW_VFTTcUZ8cGs0OwtDl",
+      "key": "aOhRXHJyb86ruKkxQAAdvTaTZ9K6FvEJD0L-EsPMENQ",
+      "nonce": "t00aJ_oiULouUvWGSkf-G2FEXbL58GjL",
       "display_name": "tls-key",
       "keeps_copy": false,
       "aad": "YnVybmRyb3AvcmV2ZWFsL3YxCnRscy1rZXkKMA",
-      "blob": "7hxrZWnTvV8aSW_VFTTcUZ8cGs0OwtDlIx64o1163Wc7sHDIyY-o2bH6cgVWyMeHXOYo3ftpSj44aYeyIyH33oisfDiLyvkfusATnn4J66bhhZXdPtYQKLJFpga4ika7fSk8nMgpTUTNANJcyyHZKansXipTLMuKVq2acWr_o6XZanbvC1zm7yo9WuAoziqrj9h5X2o3kMieF-cNi1i1blmsCn-5R9H1bCHVJgSE8eIc1rO2yRaiicQPGlgR64LVw-zYIulMQG7b9ieZjFUiAO0gWVg6ERGx5aI6GggxsWrSpc1sXRGYtOGhGTtXiROv95wi3pVPLC5C1hPGW2mpPcWCTqXWbGuEWOJATTRKozawbEgVOB8a6JGx4dKCWpH5bwaZefBzvas",
+      "blob": "t00aJ_oiULouUvWGSkf-G2FEXbL58GjL7vyGH98NZxfyegb_ujIZq5NQeJVoaEUY2va8hREzHpx04_JXiJusCljiWWnQ0xQNdoaKjy1Dj8t1mrRTOMTRHs91A90hNTUnEhchGgxOp_Vvl65XTeqbEp8zhLBq1s3HmMkaa4XyX6Bn1gPELBoFQeaG3Y57OAjDn6lxuXhygC_w6Qhkg2A-7CxqQMElMtCvd9-gIOz1a5-24ys1G0Gw_zSEphf5J9ds_oG6hIec5dEJRwELSkegjauxPlUL4KMBoHwyVAEPY6fll8YaJen5tH4d9dP8wjxVO43_DiZ9ruwXp05Q2T39RUFP_6vYvwWw1kNi6-944VabezO8ZAwXplioVYTO_JCYrvUOqnSHjlQ",
       "plaintext": "eyJ2IjoxLCJ0eXBlIjoicmV2ZWFsIiwibmFtZSI6InRscy1rZXkiLCJmb3JtYXQiOiJiYXNlNjQiLCJzZWNyZXQiOiJBQU1HQ1F3UEVoVVlHeDRoSkNjcUxUQXpOams4UDBKRlNFdE9VVlJYV2wxZ1kyWnBiRzl5ZFhoN2ZvR0VoNHFOa0pPV21aeWZvcVdvcTY2eHRMZTZ2Y0REeHNuTXo5TFYyTnZlNGVUbjZ1M3c4X2I1X1A4In0",
       "envelope": {
         "v": 1,
@@ -107,12 +107,12 @@
     },
     {
       "name": "reveal empty secret",
-      "key": "MhqDhoJnOxSW6iaKaAKTj-kL8sn1bfNrfAYtyS-c_g8",
-      "nonce": "HTyIknoVT8WlZ7Ehl0S2l8SLGfHgRK14",
+      "key": "2yX8aIEK_XubtgDuahiOfFm27OZfBEgrVJcyfzYGzGk",
+      "nonce": "G20NdryIbod7FTsPjwZ_IN_D3rPNKWm-",
       "display_name": "staging-db-url",
       "keeps_copy": true,
       "aad": "YnVybmRyb3AvcmV2ZWFsL3YxCnN0YWdpbmctZGItdXJsCjE",
-      "blob": "HTyIknoVT8WlZ7Ehl0S2l8SLGfHgRK14yttO36JedjwX3waZTNBUZ1QyaJsrQzBW_zkAwYlmvzFI3C25AjnTkeVoU4jvbzOJi4dm2besyu6L0lem9xsnqO34CmCbyN8wfPeKNsopemnDzIX5W8KV1KwW5c1d9i_tWo953ZGPqDYboEKZF31uc0Mtux0rlmFpLxgZVVw5N0fXG-GvP5yP2ZdUaBuwn8N1wZoBIEobVbp0XJ1g1v0LiyhgQhs7HcfN6n84wBPj1BFm0hkUP-DY0TTc2uITOvpg0UIeDS8l5pjfg1f06VV8mPDIWZRQvMnozjHIBwAgPrK-9wYTR1n4Pg4ued5EeJAmo7EiXq2VigM2kmfX1x1QbIMrswD8AZi-A6JYPRpXuEA",
+      "blob": "G20NdryIbod7FTsPjwZ_IN_D3rPNKWm-yQgngSt_r7tuZ5NsKGuLSMClrINzV670esYVRGcFP6xsMdPsT04-gNu7u8V-8gBTJHe_ijXB5X84gBUPO-NKgFfeaxtnMumY556X9b3Fd95J7Q2_ExexEDlueLU824w89_Mu4J286kE_l3Vu6qP9PAXR1EToKIJy0vCudeFFu7hqzAzgCW5RVCjHkNmFbvEEqEKg7yGjANSJ1IyxNgRZDVhqkr90VBtDf5hSGDkVe7iGztv8JIEiWQPcNQ39Jr4wgxfenG0uBs6n-zyxeo-lXOE_d21mDuWCsMne1N_3AVWzH_8zLzkrJNDed_pjpTMXaAedxIt7Nrgp3DqmXiLF3kyP14JC3VKMvF6mHF30rp8",
       "plaintext": "eyJ2IjoxLCJ0eXBlIjoicmV2ZWFsIiwibmFtZSI6InN0YWdpbmctZGItdXJsIiwiZm9ybWF0IjoidGV4dCIsInNlY3JldCI6IiJ9",
       "envelope": {
         "v": 1,
@@ -122,6 +122,26 @@
         "secret": ""
       },
       "secret": ""
+    },
+    {
+      "name": "reveal with password",
+      "key": "8RYFo4dCvOTY2aWuXQbyBqZ2Dc_1K_5_W4qPnz29b_Q",
+      "nonce": "EVZ9NzE3t9GXGDEE306QQESpcgr0ygBt",
+      "display_name": "prod-signing-key",
+      "keeps_copy": true,
+      "aad": "YnVybmRyb3AvcmV2ZWFsL3YxCnByb2Qtc2lnbmluZy1rZXkKMQ",
+      "blob": "EVZ9NzE3t9GXGDEE306QQESpcgr0ygBtFTYrFOdMpW0PNvNonThh9CnhSygfG4OzBIH04-uoTJA-Dn3J2cfpm1aJatrcOjPBn-LHdiT_QLX5_JLHdsAyPlACTi8gz1tBYZdlnKvOGixPllNS8_mvsRWdN5lMdji8geotvzqxnhCEgiAsB5RP-5HJQOooyM3iFNQpyDw8cr3_jojDfm834b_0T4vcSnRskexxwdVm_Oy2NCWInSBvqIKCjgOENf1_jw2wmK9wnsNrBMD7hdJcMlZH2OuExiGMa_bsIfuuGgQqkjmdzh5Yy6uu1_4Te29kkOUalqkkHYdX67nJByXaHRjNo2U9eE4Umoq23NOy7pZ0p7PsIXwBC6Y3o-CKxeeTknKv74UsbV8",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoicmV2ZWFsIiwibmFtZSI6InByb2Qtc2lnbmluZy1rZXkiLCJmb3JtYXQiOiJ0ZXh0Iiwic2VjcmV0Ijoic2stc2lnbmluZy0wMTIzNDU2Nzg5In0",
+      "envelope": {
+        "v": 1,
+        "type": "reveal",
+        "name": "prod-signing-key",
+        "format": "text",
+        "secret": "sk-signing-0123456789"
+      },
+      "secret": "c2stc2lnbmluZy0wMTIzNDU2Nzg5",
+      "password": "correct horse battery staple",
+      "salt": "VOfdcSBw-d-lUepqRAwr6Q"
     }
   ]
 }

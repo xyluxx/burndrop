@@ -68,6 +68,8 @@ class Page {
   private readonly maskNote = el<HTMLParagraphElement>("mask-note");
   private readonly revealPanel = el<HTMLDivElement>("reveal-panel");
   private readonly revealButton = el<HTMLButtonElement>("reveal");
+  private readonly passwordPanel = el<HTMLDivElement>("password-panel");
+  private readonly password = el<HTMLInputElement>("password");
   private readonly valuePanel = el<HTMLDivElement>("value-panel");
   private readonly value = el<HTMLTextAreaElement>("value");
   private readonly copyButton = el<HTMLButtonElement>("copy");
@@ -84,6 +86,8 @@ class Page {
   private expiresAt: Date | null = null;
   private countdownTimer: number | undefined;
   private pollAbort: AbortController | null = null;
+  /** The opened ciphertext, kept only while a wrong reveal password is retried. */
+  private heldCiphertext: Uint8Array | null = null;
   private readonly maskSupported = typeof CSS !== "undefined" && CSS.supports("-webkit-text-security", "disc");
 
   constructor(private readonly href: string, private readonly pageOrigin: string, private readonly isExtension: boolean) {}
@@ -143,6 +147,9 @@ class Page {
       const r = this.reveal!;
       this.name.textContent = r.name;
       el("ctx-copy").textContent = r.keepsCopy ? "yes" : "no";
+      if (r.salt) {
+        REVEAL_COPY.ready.text = "Opens once. Enter your reveal password first.";
+      }
       show(this.rowWhat, true);
       show(this.rowWhy, false);
       hide("ctx-name-detail-label", "ctx-name-detail", "ctx-storage-label", "ctx-storage", "ctx-retention-label", "ctx-retention", "ctx-fingerprint-label", "ctx-fingerprint");
@@ -229,6 +236,12 @@ class Page {
     });
     this.revealButton.addEventListener("click", () => {
       void this.doReveal();
+    });
+    this.password.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        void this.doReveal();
+      }
     });
     this.toggleValue.addEventListener("click", () => {
       const shown = this.value.classList.toggle("masked") === false;
@@ -326,40 +339,78 @@ class Page {
     if (this.state !== "ready" || !this.reveal || !this.relay) {
       return;
     }
-    this.setState("revealing");
     const r = this.reveal;
-    let ciphertext: string;
-    try {
-      ({ ciphertext } = await this.relay.open(r.id, r.revealToken));
-    } catch (err) {
-      if (err instanceof RelayError && err.code === "gone") {
-        if (err.state === "opened") {
-          REVEAL_COPY.opened.text = `It was opened ${formatTime(err.at)}. If that was not you, tell your agent right away.`;
-          this.setState("opened");
-        } else {
-          this.setState(err.state === "revoked" ? "revoked" : "expired");
+    let key = r.key;
+    if (r.salt) {
+      const typed = this.password.value;
+      if (typed === "") {
+        this.announce("Enter the reveal password first.");
+        this.password.focus();
+        return;
+      }
+      this.setState("revealing");
+      // Let the state paint before the synchronous Argon2id run.
+      await sleep(30);
+      try {
+        key = c.revealKeyWithPassword(r.key, typed, r.salt);
+      } catch (err) {
+        this.setState("ready");
+        this.announce(describeError(err));
+        return;
+      }
+    } else {
+      this.setState("revealing");
+    }
+    // A retry after a wrong password reuses the ciphertext the relay
+    // already handed out; the relay copy is gone after the first open.
+    let ciphertext = this.heldCiphertext;
+    if (!ciphertext) {
+      try {
+        const res = await this.relay.open(r.id, r.revealToken);
+        ciphertext = b64.decode(res.ciphertext);
+      } catch (err) {
+        if (key !== r.key) c.zero(key);
+        if (err instanceof RelayError && err.code === "gone") {
+          if (err.state === "opened") {
+            REVEAL_COPY.opened.text = `It was opened ${formatTime(err.at)}. If that was not you, tell your agent right away.`;
+            this.setState("opened");
+          } else {
+            this.setState(err.state === "revoked" ? "revoked" : "expired");
+          }
+          return;
         }
+        if (err instanceof RelayError && err.status === 404) {
+          this.setState("expired");
+          return;
+        }
+        this.setState("ready");
+        this.announce(err instanceof RelayError ? relayErrorMessage(err.code, err.detail) : describeError(err));
         return;
       }
-      if (err instanceof RelayError && err.status === 404) {
-        this.setState("expired");
-        return;
-      }
-      this.setState("ready");
-      this.announce(err instanceof RelayError ? relayErrorMessage(err.code, err.detail) : describeError(err));
-      return;
     }
     try {
-      const env = c.decryptEnvelope(r.key, b64.decode(ciphertext), c.revealAad(r.name, r.keepsCopy));
+      const env = c.decryptEnvelope(key, ciphertext, c.revealAad(r.name, r.keepsCopy));
       if (env.type !== "reveal" || env.name !== r.name) {
         throw new c.EnvelopeError("the secret does not match this link");
       }
       const bytes = c.secretBytes(env);
       this.value.value = env.format === "text" ? env.secret : `base64:${b64.encode(bytes)}`;
+      this.heldCiphertext = null;
+      this.password.value = "";
+      if (key !== r.key) c.zero(key);
       c.zero(r.key);
       this.setState("revealed");
       this.value.focus();
     } catch {
+      if (key !== r.key) c.zero(key);
+      if (r.salt) {
+        this.heldCiphertext = ciphertext;
+        REVEAL_COPY.ready.text = "Wrong password. The link has been used now, so keep this page open and try again here.";
+        this.setState("ready");
+        this.password.select();
+        this.password.focus();
+        return;
+      }
       this.fail("The secret could not be decrypted. The link was altered or the relay returned the wrong data. The relay copy is gone; ask your agent to send it again.");
     }
   }
@@ -380,6 +431,8 @@ class Page {
     this.secret.disabled = next !== "waiting";
     show(this.revealPanel, this.mode === "reveal" && (next === "ready" || next === "revealing"));
     this.revealButton.disabled = next !== "ready";
+    show(this.passwordPanel, this.mode === "reveal" && !!this.reveal?.salt && (next === "ready" || next === "revealing"));
+    this.password.disabled = next !== "ready";
     show(this.valuePanel, next === "revealed");
     show(this.context, next !== "error" && next !== "loading");
     show(this.facts, next !== "error" && next !== "loading");

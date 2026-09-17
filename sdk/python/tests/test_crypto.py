@@ -381,7 +381,9 @@ def test_encode_validates() -> None:
         drop_envelope(purpose="", storage=""),
         drop_envelope(retention="until:2027-03-04T05:06:07Z"),
         drop_envelope(retention="session", name="x y", secret='päss <tag> & "done"\n'),
-        crypto.Envelope.reveal("staging-db-url", b"postgres://app:s3cret@db.staging.example:5432/app"),
+        crypto.Envelope.reveal(
+            "staging-db-url", b"postgres://app:s3cret@db.staging.example:5432/app"
+        ),
         crypto.Envelope.reveal("n", b""),
         crypto.Envelope.reveal("n", b"\x00\x01\xff"),
         crypto.Envelope.reveal("n", b"\x01\x1f\x7f"),

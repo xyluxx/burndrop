@@ -89,6 +89,25 @@ exists; swapping ciphertexts between reveals is already impossible because
 every reveal has its own random key. Vectors: `reveal_aad`,
 `xchacha20poly1305`.
 
+### 4.1 Password-protected reveals
+
+The human can require a password for reveals (`burndrop reveal-password set`
+in a terminal, then `reveal_password_required = true` in the agent's config).
+The agent then does not encrypt with the link key directly:
+
+1. It generates `link_key` (32 random bytes) and `salt` (16 random bytes) in addition to the nonce.
+2. `pw_key = argon2id(password, salt)`: Argon2id version 1.3, time cost 2, memory 64 MiB (65536 KiB), one lane, 32 bytes of output. These are libsodium's interactive limits (`crypto_pwhash` with `crypto_pwhash_ALG_ARGON2ID13`); PyNaCl uses `nacl.pwhash.argon2id.kdf` and Go uses `argon2.IDKey` with the same numbers. The password is its UTF-8 bytes as typed, with no normalization and no trimming, and must not be empty.
+3. `key = BLAKE2b-256("burndrop/reveal-password/v1" || link_key || pw_key)`: unkeyed BLAKE2b with a 32-byte digest (`crypto_generichash` in libsodium, `hashlib.blake2b(digest_size=32)` in Python, `blake2b.Sum256` in Go).
+4. Encryption proceeds as in section 4 with `key`. `aad` is unchanged.
+5. The link carries `link_key` in `k` and `salt` in `s` (section 6). The page and the CLI ask for the password before they open the slot, derive `key`, and only then post the open request, so a human who does not know the password can close the page without spending the link. A wrong password fails authentication; because the relay copy is gone by then, the page and the CLI keep the ciphertext and let the human retry locally.
+
+Neither the link nor the password alone decrypts the blob. The password
+never travels: it is typed into a terminal, kept in the OS credential
+store on the agent's machine, and typed again on the reveal page. The
+agent process reads it from the credential store when it builds a link;
+the model, the MCP client, and the conversation never see it. Vectors:
+`reveal_password`.
+
 ## 5. Envelope
 
 The plaintext of both directions is one UTF-8 JSON document with the
@@ -132,7 +151,7 @@ a space); binary values are base64url.
 
 ```
 https://<page-host>/drop#v=1&i=<drop_id>&u=<upload_token>&k=<recipient_pk>&n=<name>&p=<purpose>&s=<storage>&t=<retention>[&r=<relay_origin>]
-https://<page-host>/reveal#v=1&i=<drop_id>&o=<reveal_token>&k=<key>&n=<name>&c=<0|1>[&r=<relay_origin>]
+https://<page-host>/reveal#v=1&i=<drop_id>&o=<reveal_token>&k=<key>&n=<name>&c=<0|1>[&s=<salt>][&r=<relay_origin>]
 ```
 
 Parsing rules (the Go, TypeScript, and Python parsers are equivalent and
@@ -143,6 +162,7 @@ share the test cases in `internal/link/link_test.go` and `web/test/link.test.ts`
 - Unknown fields, duplicate fields, and malformed pairs are rejected. Required fields: `i`, `u`, `k`, `n`, `t` for drops; `i`, `o`, `k`, `n`, `c` for reveals.
 - `k` must be 43 characters decoding to 32 bytes. `i`, `u`, `o` must be valid tokens (section 2).
 - `n`, `p`, `s`, `t` follow the envelope rules of section 5. `c` is `0` or `1`.
+- `s` on a reveal is the password salt (section 4.1): when present it must be 22 characters decoding to 16 bytes, and the link needs the reveal password. On a drop, `s` is the storage description.
 - `r`, when present, is normalized: lowercase scheme and host, default ports removed, `https` only except `http` for `localhost`, `127.0.0.1`, and `[::1]`. The hosted page accepts `r` only when it equals the page's own origin; the browser extension and the CLI use it directly and default to the link's origin when it is absent.
 
 A drop link is about 250 characters plus the metadata text.
@@ -167,6 +187,7 @@ A drop link is about 250 characters plus the metadata text.
 | `envelope` | six valid and six invalid documents |
 | `reveal_aad` | name and flag to aad bytes |
 | `tokens` | valid, non-canonical, wrong-length, wrong-alphabet, and empty tokens with their SHA-256 |
+| `reveal_password` | password, salt, and link key with the Argon2id output and the derived reveal key, for an ASCII passphrase, a unicode password, and a short one (section 4.1) |
 
 Every implementation loads the same file. `spec/interop/` adds files that
 each language generates and every other language must open.
@@ -174,7 +195,10 @@ each language generates and every other language must open.
 ## 9. What is deliberately not done
 
 No password-based encryption on drops: the key is random and strong, and a
-password would add a weak factor and a phishing surface. No compression
+password on the human-to-agent path would add a weak factor and a phishing
+surface. The optional reveal password (section 4.1) is a second factor on
+top of the random link key, never a replacement for it, and it never passes
+through the conversation. No compression
 before encryption. No key reuse across requests. No custom key derivation.
 No signed tokens or JWTs: random tokens stored as hashes are simpler and
 cannot be forged. No encryption at the relay: it has nothing to encrypt

@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from burndrop import __version__, crypto
+from burndrop import __version__, crypto, password
 from burndrop.encoding import b64encode
 
 OUT = Path(__file__).resolve().parent / "python.json"
@@ -50,13 +50,25 @@ def drop_case(
     }
 
 
-def reveal_case(name: str, display_name: str, keeps_copy: bool, value: bytes) -> dict[str, Any]:
+def reveal_case(
+    name: str,
+    display_name: str,
+    keeps_copy: bool,
+    value: bytes,
+    reveal_password: str | None = None,
+) -> dict[str, Any]:
     key = crypto.new_symmetric_key()
     nonce = os.urandom(crypto.NONCE_SIZE)
     envelope = crypto.Envelope.reveal(display_name, value)
     plaintext = envelope.encode()
     aad = crypto.reveal_aad(display_name, keeps_copy)
-    blob = crypto.encrypt_aead(key, crypto.pad(plaintext, crypto.PAD_BLOCK), aad, nonce)
+    enc_key = key
+    extra: dict[str, Any] = {}
+    if reveal_password is not None:
+        salt = password.new_salt()
+        enc_key = password.reveal_key_with_password(key, reveal_password, salt)
+        extra = {"password": reveal_password, "salt": b64encode(salt)}
+    blob = crypto.encrypt_aead(enc_key, crypto.pad(plaintext, crypto.PAD_BLOCK), aad, nonce)
     return {
         "name": name,
         "key": b64encode(key),
@@ -68,6 +80,7 @@ def reveal_case(name: str, display_name: str, keeps_copy: bool, value: bytes) ->
         "plaintext": b64encode(plaintext),
         "envelope": json.loads(plaintext),
         "secret": b64encode(value),
+        **extra,
     }
 
 
@@ -115,6 +128,13 @@ def build() -> dict[str, Any]:
             ),
             reveal_case("reveal binary no copy", "tls-key", False, bytes(range(0, 256, 3))),
             reveal_case("reveal empty secret", "staging-db-url", True, b""),
+            reveal_case(
+                "reveal with password",
+                "prod-signing-key",
+                True,
+                b"sk-signing-0123456789",
+                "correct horse battery staple",
+            ),
         ],
     }
 

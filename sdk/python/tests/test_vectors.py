@@ -20,6 +20,7 @@ EXPECTED_SECTIONS = {
     "envelope",
     "reveal_aad",
     "tokens",
+    "reveal_password",
 }
 
 

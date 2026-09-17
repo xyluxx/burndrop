@@ -25,6 +25,8 @@ export const TOKEN_LEN = 22;
 export const TOKEN_BYTES = 16;
 const KEY_LEN = 43;
 const KEY_BYTES = 32;
+const SALT_LEN = 22;
+const SALT_BYTES = 16;
 
 /**
  * A human-to-agent link: the agent's request public key plus what the page
@@ -52,6 +54,8 @@ export interface RevealLink {
   key: Uint8Array;
   name: string;
   keepsCopy: boolean;
+  /** 16 bytes when the reveal needs the password the human set. */
+  salt?: Uint8Array;
 }
 
 /** The result of parseLink: exactly one kind. */
@@ -238,6 +242,9 @@ export function validateRevealLink(r: RevealLink): void {
   if (r.key.length !== KEY_BYTES) {
     throw new LinkError("key must be " + String(KEY_BYTES) + " bytes");
   }
+  if (r.salt !== undefined && r.salt.length !== 0 && r.salt.length !== SALT_BYTES) {
+    throw new LinkError("salt must be " + String(SALT_BYTES) + " bytes");
+  }
   try {
     validateName(r.name);
   } catch (err) {
@@ -277,6 +284,9 @@ export function buildRevealLink(r: RevealLink, pageOrigin: string): string {
     ["n", r.name],
     ["c", r.keepsCopy ? "1" : "0"],
   ];
+  if (r.salt !== undefined && r.salt.length > 0) {
+    fields.push(["s", encodeBase64Url(r.salt)]);
+  }
   if (r.relay !== undefined && r.relay !== "") {
     fields.push(["r", normalizeOrigin(r.relay)]);
   }
@@ -348,6 +358,22 @@ function require(m: Map<string, string>, ...keys: string[]): void {
   }
 }
 
+function decodeSalt(s: string): Uint8Array {
+  if (s.length !== SALT_LEN) {
+    throw new LinkError("salt must be " + String(SALT_LEN) + " base64url characters");
+  }
+  let b: Uint8Array;
+  try {
+    b = decodeBase64Url(s);
+  } catch {
+    throw new LinkError("salt is not valid base64url");
+  }
+  if (b.length !== SALT_BYTES) {
+    throw new LinkError("salt is not valid base64url");
+  }
+  return b;
+}
+
 function decodeKey(s: string): Uint8Array {
   if (s.length !== KEY_LEN) {
     throw new LinkError("key must be " + String(KEY_LEN) + " base64url characters");
@@ -385,7 +411,7 @@ function parseDropFields(frag: string): DropLink {
 }
 
 function parseRevealFields(frag: string): RevealLink {
-  const m = parseFields(frag, ["v", "i", "o", "k", "n", "c", "r"]);
+  const m = parseFields(frag, ["v", "i", "o", "k", "n", "c", "s", "r"]);
   require(m, "i", "o", "k", "n", "c");
   const c = m.get("c");
   if (c !== "0" && c !== "1") {
@@ -398,6 +424,10 @@ function parseRevealFields(frag: string): RevealLink {
     name: m.get("n") ?? "",
     keepsCopy: c === "1",
   };
+  const s = m.get("s") ?? "";
+  if (s !== "") {
+    r.salt = decodeSalt(s);
+  }
   const rel = m.get("r") ?? "";
   if (rel !== "") {
     r.relay = normalizeOrigin(rel);

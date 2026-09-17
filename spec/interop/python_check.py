@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from burndrop import crypto
+from burndrop import crypto, password
 from burndrop.encoding import EncodingError, b64decode, b64encode
 
 HERE = Path(__file__).resolve().parent
@@ -100,6 +100,13 @@ def check_drop(case: dict[str, Any]) -> list[str]:
 
 def check_reveal(case: dict[str, Any]) -> list[str]:
     key = _bytes(case, "key", crypto.KEY_SIZE)
+    link_key = key
+    if "salt" in case:
+        salt = _bytes(case, "salt", password.SALT_SIZE)
+        reveal_password = case.get("password")
+        if not isinstance(reveal_password, str):
+            raise Failure("password must be a string when salt is present")
+        key = password.reveal_key_with_password(link_key, reveal_password, salt)
     display_name = case.get("display_name")
     keeps_copy = case.get("keeps_copy")
     if not isinstance(display_name, str) or not isinstance(keeps_copy, bool):
@@ -121,6 +128,13 @@ def check_reveal(case: dict[str, Any]) -> list[str]:
         pass
     else:
         raise Failure("blob decrypts with keeps_copy flipped; the display fields are not bound")
+    if key != link_key:
+        try:
+            crypto.decrypt_aead(link_key, blob, aad)
+        except crypto.DecryptError:
+            pass
+        else:
+            raise Failure("blob decrypts with the link key alone; the password is not mixed in")
     return notes
 
 

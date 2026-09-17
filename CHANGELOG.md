@@ -16,9 +16,16 @@ Keep a Changelog, and the project uses Semantic Versioning.
   64-bit key fingerprints, public key commitments, and shared test vectors
   (`spec/vectors.json`) checked in Go, TypeScript, and Python.
 - Agent runtime and CLI (`burndrop`): `init` with backend detection, MCP server
-  with seven tools, `request`, `fetch`, `send`, `run` with redaction and
-  `capture_as`, `list`, `delete`, `pending`, `revoke`, `audit`, `verify-page`,
-  `doctor`, `instructions`, and the human-side `drop` and `open` commands.
+  with eight tools, `request`, `fetch`, `send`, `run` with redaction and
+  `capture_as`, `list`, `delete`, `pending`, `revoke`, `audit`,
+  `reveal-password`, `verify-page`, `doctor`, `instructions`, and the
+  human-side `drop` and `open` commands.
+- Optional reveal password: `burndrop reveal-password set` stores a password
+  in the OS credential store and makes every reveal link ask for it before
+  the page shows the value (Argon2id and BLAKE2b, crypto specification
+  section 4.1). The `reveal_password` MCP tool turns the requirement on or
+  off from the conversation; the password itself never passes through the
+  chat. The page, the CLI, both SDKs, and the interop files support it.
 - Twelve storage backends: OS keychain, age vault, `.env` file, memory,
   1Password, Bitwarden, HashiCorp Vault, Infisical, Doppler, AWS Secrets
   Manager, Google Secret Manager, and Azure Key Vault.

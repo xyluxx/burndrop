@@ -64,7 +64,9 @@ real credentials.
       "blob": "<nonce || XChaCha20-Poly1305 ciphertext || tag>",
       "plaintext": "<the envelope JSON exactly as the producer encoded it, before padding>",
       "envelope": { "v": 1, "type": "reveal", "name": "staging-db-url", "format": "text", "secret": "..." },
-      "secret": "<the raw secret bytes>"
+      "secret": "<the raw secret bytes>",
+      "password": "<optional: the reveal password, as typed>",
+      "salt": "<optional: 16 bytes, present together with password>"
     }
   ]
 }
@@ -119,6 +121,10 @@ For every reveal:
    `reveal`; the secret bytes equal `secret`.
 5. Decrypting with `keeps_copy` flipped in the additional data fails
    (proves the display fields are authenticated).
+6. When `salt` is present the case is a password-protected reveal
+   (crypto specification section 4.1): `key` is the link key, and the key
+   used in step 3 is `reveal_key_with_password(key, password, salt)`.
+   Decrypting with the link key alone must fail.
 
 A checker may additionally report, without failing, whether re-encoding
 the decoded envelope reproduces `plaintext` byte for byte. The Go and

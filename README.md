@@ -54,8 +54,9 @@ human through a link that opens once and never passes through the chat.
 - **End to end encryption with libsodium.** Sealed boxes (X25519, XSalsa20-Poly1305) from human to agent, XChaCha20-Poly1305 from agent to human. One key per exchange, carried in the URL fragment, which browsers never send to servers. [Specification](docs/crypto-spec.md).
 - **A zero-knowledge relay.** Memory only, nothing on disk, POST-only API, atomic fetch and delete, hashed tokens, per-client and per-agent rate limits, no identifiers in URLs or logs. One static binary or a 5 MB container image.
 - **Substitution-proof links.** The human compares a fingerprint; the relay checks a commitment to the agent's key registered before the link existed. A swapped key has to beat both.
-- **Nothing for the model.** Seven MCP tools that return names, statuses, and links, never values. `run_with_secret` injects a value into a command and returns redacted output; `capture_as` stores a command's standard output as a new secret instead of returning it.
+- **Nothing for the model.** Eight MCP tools that return names, statuses, and links, never values. `run_with_secret` injects a value into a command and returns redacted output; `capture_as` stores a command's standard output as a new secret instead of returning it.
 - **Twelve storage backends.** OS keychain, an age-encrypted vault, 1Password, Bitwarden, HashiCorp Vault, Infisical, Doppler, AWS Secrets Manager, Google Secret Manager, Azure Key Vault, memory, and a git-ignored `.env` file, with retention policies and an audit log.
+- **An optional reveal password.** Set it once in a terminal (`burndrop reveal-password set`) and every link the agent sends you needs it too: the page asks for it before showing the value, and the link alone decrypts nothing. Turn it on or off by asking the agent; the password itself never enters the chat.
 - **Three ways to open a link.** The hosted page (one HTML file with a published hash and a strict CSP), the browser extension (a bundled copy of the page that never trusts the relay), or the CLI.
 - **Verifiable releases.** Signed with Sigstore, attested, with SBOMs; the page hash is published per release and `burndrop verify-page` checks any relay against it.
 - **SDKs and deployment options.** Python and TypeScript SDKs that speak the protocol natively and prove it with shared vectors; Compose with Caddy, Tailscale Funnel, Cloudflare Tunnel, or nip.io.
@@ -190,10 +191,10 @@ on a real domain: [Deploy a relay](#deploy-a-relay).
 
 ## Connect an agent
 
-burndrop ships an MCP server (`burndrop mcp`, stdio) with seven tools:
+burndrop ships an MCP server (`burndrop mcp`, stdio) with eight tools:
 `request_secret`, `fetch_secret`, `send_secret`, `run_with_secret`,
-`list_secrets`, `delete_secret`, `revoke_request`. None of them returns a
-value. `send_secret` asks the human to confirm through MCP elicitation when
+`list_secrets`, `delete_secret`, `revoke_request`, `reveal_password`.
+None of them returns a value. `send_secret` asks the human to confirm through MCP elicitation when
 the client supports it.
 
 Claude Code:
@@ -304,7 +305,9 @@ Read the [threat model](docs/threat-model.md), the [crypto specification](docs/c
 
 **Can the relay operator read my secrets?** No. The relay receives ciphertext encrypted to a key it never sees. It learns sizes rounded to 256 bytes, timing, and client addresses.
 
-**What if someone intercepts the link?** They can upload a value in the human's place, which the human will notice when their own upload is refused, and they learn nothing about anything already sent. They cannot decrypt a reveal without clicking, and a click burns it, which the agent sees.
+**What if someone intercepts the link?** They can upload a value in the human's place, which the human will notice when their own upload is refused, and they learn nothing about anything already sent. They cannot decrypt a reveal without clicking, and a click burns it, which the agent sees. With a reveal password turned on, the link is useless to them even after the click.
+
+**Can I require a password on top of the link?** Yes. Run `burndrop reveal-password set` once in a terminal; every reveal link then asks for that password before it shows the value. Ask the agent to turn the requirement off or on again at any time (the `reveal_password` tool); the password itself never passes through the chat.
 
 **What does the model see?** The name, purpose, storage, retention, expiry, fingerprint, link, and statuses. Never the value. Command output is redacted before it returns.
 

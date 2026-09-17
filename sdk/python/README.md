@@ -26,7 +26,9 @@ uses the standard library.
 from burndrop import Agent
 
 agent = Agent("https://relay.example", api_key=os.environ["BURNDROP_AGENT_KEY"])
-request = agent.request_secret("openai-api-key", purpose="Call the OpenAI API from the billing script")
+request = agent.request_secret(
+    "openai-api-key", purpose="Call the OpenAI API from the billing script"
+)
 print(request.message)  # send this to the human: link, fingerprint, and the disclosures
 fetched = agent.fetch_secret(request, wait_seconds=300)  # long polls until the human submits
 api_key = fetched.value if fetched.status == "received" else None  # bytes, for the program only
@@ -43,6 +45,7 @@ cancels a pending request.
 ```python
 sent = agent.send_secret("staging-db-url", b"postgres://app:...", ttl=1800, keeps_copy=False)
 print(sent.message)  # the link opens once, expires, and says whether the agent keeps a copy
+# password="..." makes the page ask for that password before it shows the value
 status = agent.relay.wait_for_open(sent.request_id, time.time() + 600)
 print(status.state)  # opened, expired, or revoked
 ```
@@ -66,6 +69,8 @@ from burndrop import human
 
 fingerprint = human.submit(drop_link, b"sk-live-...")  # what the drop page does
 value = human.open(reveal_link)  # what the reveal page does; the relay copy is gone afterwards
+# Links that carry a salt need the reveal password the human set.
+value = human.open(protected_link, password="...")
 ```
 
 `submit` seals the value to the key in the link together with the metadata
@@ -114,7 +119,7 @@ program writes the value somewhere, say where.
 | `burndrop.agent` | `Agent(relay_origin, api_key=None, page_origin=None)` | The agent side against one relay. `page_origin` defaults to the relay origin; when they differ, links carry the relay in their `r` field. |
 | | `Agent.request_secret(name, purpose, retention="until-revoked", ttl=3600, storage_label=None)` | Create a drop slot. Returns a `Request` with `request_id`, `link`, `fingerprint`, `expires_at`, `message`, and the key material needed to fetch or revoke. |
 | | `Agent.fetch_secret(request, wait_seconds=30)` | Wait up to `wait_seconds` (at most 300) for the upload, then fetch, decrypt, and verify. Returns a `Fetched` with `status`, `value`, `name`, `fingerprint`, `request_id`, `message`. |
-| | `Agent.send_secret(name, value, ttl=3600, keeps_copy=True)` | Encrypt a value for a human. Returns a `Sent` with `request_id`, `link`, `expires_at`, `keeps_copy`, `message`, `revoke_token`. |
+| | `Agent.send_secret(name, value, ttl=3600, keeps_copy=True, password=None)` | Encrypt a value for a human. With `password`, the link carries a salt and the page asks for that password (specification section 4.1). Returns a `Sent` with `request_id`, `link`, `expires_at`, `keeps_copy`, `password_protected`, `message`, `revoke_token`. |
 | | `Agent.revoke(request)` and `Agent.revoke_sent(sent)` | Cancel on the relay; return the resulting state. |
 | | `Agent.run_with_secret(command, env, ...)` | `run_with_secret` with the agent's redactor. |
 | | `run_with_secret(command, env, *, cwd=None, stdin=None, timeout=120, max_output_bytes=32768, discard_output=False, redactor=None)` | Run a command with values injected as environment variables; returns a `RunResult` with `exit_code`, redacted and bounded `stdout` and `stderr`, `timed_out`, `truncated`, `duration_ms`. |

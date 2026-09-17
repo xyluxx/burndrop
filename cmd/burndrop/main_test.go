@@ -29,6 +29,7 @@ type cli struct {
 	secret string // answer for hidden prompts
 	yes    bool   // answer for confirmations
 	term   bool
+	kc     map[string]string // fake keychain, shared by every run
 }
 
 func newCLI(t *testing.T) *cli {
@@ -59,7 +60,7 @@ func newCLIWith(t *testing.T, mutate func(*relay.Config)) *cli {
 	srv := httptest.NewServer(relay.New(cfg, store, relay.Options{Version: "test"}).Handler())
 	t.Cleanup(srv.Close)
 	dir := t.TempDir()
-	c := &cli{t: t, relay: srv, dir: dir, env: map[string]string{
+	c := &cli{t: t, relay: srv, dir: dir, kc: map[string]string{}, env: map[string]string{
 		"BURNDROP_CONFIG":    filepath.Join(dir, "config.toml"),
 		"BURNDROP_STATE_DIR": filepath.Join(dir, "state"),
 		"BURNDROP_API_KEY":   testKey,
@@ -77,15 +78,15 @@ func (c *cli) run(args ...string) (int, string, string) {
 	a.version = "test"
 	a.isTerminal = func() bool { return c.term }
 	a.readSecret = func(string) ([]byte, error) { return []byte(c.secret), nil }
-	kc := map[string]string{}
 	a.keychainGet = func(_, entry string) (string, error) {
-		v, ok := kc[entry]
+		v, ok := c.kc[entry]
 		if !ok {
 			return "", os.ErrNotExist
 		}
 		return v, nil
 	}
-	a.keychainSet = func(_, entry, value string) error { kc[entry] = value; return nil }
+	a.keychainSet = func(_, entry, value string) error { c.kc[entry] = value; return nil }
+	a.keychainDelete = func(_, entry string) error { delete(c.kc, entry); return nil }
 	if c.yes {
 		c.stdin = "y\n"
 	}

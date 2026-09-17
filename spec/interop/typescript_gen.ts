@@ -26,8 +26,10 @@ import {
   generateKeyPair,
   newSymmetricKey,
   pad,
+  newSalt,
   randomBytes,
   revealAad,
+  revealKeyWithPassword,
   seal,
   secretField,
   sodiumVersion,
@@ -56,13 +58,21 @@ async function dropCase(name: string, secretName: string, purpose: string, stora
   };
 }
 
-async function revealCase(name: string, displayName: string, keepsCopy: boolean, value: Uint8Array): Promise<Record<string, unknown>> {
+async function revealCase(name: string, displayName: string, keepsCopy: boolean, value: Uint8Array, password?: string): Promise<Record<string, unknown>> {
   const key = await newSymmetricKey();
   const nonce = await randomBytes(24);
   const envelope: Envelope = { v: 1, type: "reveal", name: displayName, ...secretField(value) };
   const plaintext = encodeEnvelope(envelope);
   const aad = revealAad(displayName, keepsCopy);
-  const blob = await encryptAead(key, pad(plaintext, PAD_BLOCK), aad, { nonce });
+  let encKey = key;
+  const extra: Record<string, unknown> = {};
+  if (password !== undefined) {
+    const salt = await newSalt();
+    encKey = await revealKeyWithPassword(key, password, salt);
+    extra.password = password;
+    extra.salt = encodeBase64Url(salt);
+  }
+  const blob = await encryptAead(encKey, pad(plaintext, PAD_BLOCK), aad, { nonce });
   return {
     name,
     key: encodeBase64Url(key),
@@ -74,6 +84,7 @@ async function revealCase(name: string, displayName: string, keepsCopy: boolean,
     plaintext: encodeBase64Url(plaintext),
     envelope: decodeEnvelope(plaintext),
     secret: encodeBase64Url(value),
+    ...extra,
   };
 }
 
@@ -81,8 +92,8 @@ function libraryDescription(): Promise<string> {
   const packageJson = JSON.parse(readFileSync(join(here, "..", "..", "sdk", "typescript", "package.json"), "utf8")) as {
     dependencies?: Record<string, string>;
   };
-  const wrappers = packageJson.dependencies?.["libsodium-wrappers"] ?? "unknown";
-  return sodiumVersion().then((v) => "burndrop-typescript " + VERSION + ", libsodium-wrappers " + wrappers + " (libsodium " + v + ")");
+  const wrappers = packageJson.dependencies?.["libsodium-wrappers-sumo"] ?? "unknown";
+  return sodiumVersion().then((v) => "burndrop-typescript " + VERSION + ", libsodium-wrappers-sumo " + wrappers + " (libsodium " + v + ")");
 }
 
 async function build(): Promise<Record<string, unknown>> {
@@ -117,6 +128,7 @@ async function build(): Promise<Record<string, unknown>> {
       await revealCase("reveal text", "staging-db-url", true, utf8.encode("postgres://app:s3cret@db.staging.example:5432/app")),
       await revealCase("reveal binary no copy", "tls-key", false, new Uint8Array(86).map((_, i) => i * 3)),
       await revealCase("reveal empty secret", "staging-db-url", true, new Uint8Array(0)),
+      await revealCase("reveal with password", "prod-signing-key", true, utf8.encode("sk-signing-0123456789"), "correct horse battery staple"),
     ],
   };
 }

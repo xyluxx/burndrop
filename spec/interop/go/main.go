@@ -58,6 +58,11 @@ type revealCase struct {
 	Plaintext   string          `json:"plaintext"`
 	Envelope    json.RawMessage `json:"envelope"`
 	Secret      string          `json:"secret"`
+	// Password and Salt are present for password-protected reveals: Key is
+	// then the link key and the blob is encrypted under
+	// reveal_key_with_password(key, password, salt) (crypto spec 4.1).
+	Password string `json:"password,omitempty"`
+	Salt     string `json:"salt,omitempty"`
 }
 
 func main() {
@@ -127,6 +132,7 @@ type revealInput struct {
 	name, displayName string
 	keepsCopy         bool
 	value             []byte
+	password          string
 }
 
 // Cases mirror the Python and TypeScript generators: text, characters JSON
@@ -138,9 +144,10 @@ var (
 		{"drop binary", "tls-cert", "", "", "until:2027-01-02T03:04:05Z", []byte{0x00, 0xff, 0x10, 0x80, 0x7f, 0x01, 0xfe}},
 	}
 	revealInputs = []revealInput{
-		{"reveal text", "staging-db-url", true, []byte("postgres://app:s3cret@db.staging.example:5432/app")},
-		{"reveal binary no copy", "session-key", false, []byte{0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd}},
-		{"reveal empty secret", "empty", true, []byte{}},
+		{"reveal text", "staging-db-url", true, []byte("postgres://app:s3cret@db.staging.example:5432/app"), ""},
+		{"reveal binary no copy", "session-key", false, []byte{0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd}, ""},
+		{"reveal empty secret", "empty", true, []byte{}, ""},
+		{"reveal with password", "prod-signing-key", true, []byte("sk-signing-0123456789"), "correct horse battery staple"},
 	}
 )
 
@@ -186,11 +193,21 @@ func generate(path string, random io.Reader, now time.Time) error {
 			return fmt.Errorf("%s: %w", in.name, err)
 		}
 		aad := crypto.RevealAAD(in.displayName, in.keepsCopy)
-		blob, err := crypto.EncryptAEAD(key, crypto.Pad(plain, crypto.PadBlock), aad, random)
+		encKey := key
+		var salt []byte
+		if in.password != "" {
+			if salt, err = crypto.NewSalt(random); err != nil {
+				return err
+			}
+			if encKey, err = crypto.RevealKeyWithPassword(key, []byte(in.password), salt); err != nil {
+				return err
+			}
+		}
+		blob, err := crypto.EncryptAEAD(encKey, crypto.Pad(plain, crypto.PadBlock), aad, random)
 		if err != nil {
 			return err
 		}
-		out.Reveals = append(out.Reveals, revealCase{
+		c := revealCase{
 			Name:        in.name,
 			Key:         crypto.Encoding.EncodeToString(key[:]),
 			Nonce:       crypto.Encoding.EncodeToString(blob[:crypto.NonceSize]),
@@ -201,7 +218,13 @@ func generate(path string, random io.Reader, now time.Time) error {
 			Plaintext:   crypto.Encoding.EncodeToString(plain),
 			Envelope:    json.RawMessage(plain),
 			Secret:      crypto.Encoding.EncodeToString(in.value),
-		})
+		}
+		if salt != nil {
+			c.Password = in.password
+			c.Salt = crypto.Encoding.EncodeToString(salt)
+			crypto.ZeroKey(encKey)
+		}
+		out.Reveals = append(out.Reveals, c)
 		crypto.ZeroKey(key)
 	}
 	var buf bytes.Buffer
@@ -346,6 +369,16 @@ func checkReveal(r revealCase) error {
 	if err != nil {
 		return fmt.Errorf("key: %w", err)
 	}
+	linkKey := key
+	if r.Salt != "" {
+		salt, err := decode("salt", r.Salt)
+		if err != nil {
+			return err
+		}
+		if key, err = crypto.RevealKeyWithPassword(linkKey, []byte(r.Password), salt); err != nil {
+			return fmt.Errorf("password key: %w", err)
+		}
+	}
 	aad, err := decode("aad", r.Aad)
 	if err != nil {
 		return err
@@ -394,6 +427,11 @@ func checkReveal(r revealCase) error {
 	}
 	if _, err := crypto.DecryptAEAD(key, blob, crypto.RevealAAD(r.DisplayName, !r.KeepsCopy)); err == nil {
 		return errors.New("decryption succeeded with the keeps_copy flag flipped")
+	}
+	if r.Salt != "" {
+		if _, err := crypto.DecryptAEAD(linkKey, blob, aad); err == nil {
+			return errors.New("decryption succeeded with the link key alone; the password is not mixed in")
+		}
 	}
 	return nil
 }

@@ -8,6 +8,7 @@ import {
   decryptEnvelope,
   fingerprint,
   revealAad,
+  revealKeyWithPassword,
   sealEnvelope,
   secretBytes,
   secretField,
@@ -20,6 +21,8 @@ import { parseDropLink, parseRevealLink, relayOrigin } from "./link.js";
 import { RelayClient, RelayCode, SlotState, type RelayClientOptions } from "./relay.js";
 
 export interface HumanOptions extends RelayClientOptions {
+  /** The reveal password the human set, for links that carry a salt. */
+  password?: string | Uint8Array;
   /** Talk to this relay instead of the one named by the link. */
   relay?: string;
   /** Abort signal for the relay calls. */
@@ -142,20 +145,31 @@ export async function open(link: string, options: HumanOptions = {}): Promise<Op
   if (status.state !== SlotState.Created) {
     throw new BurndropError("this link was already used or revoked (state: " + status.state + ")");
   }
+  // The password key is derived before the relay is asked, so a missing
+  // password never burns the secret.
+  let key = reveal.key;
+  const salt = reveal.salt !== undefined && reveal.salt.length > 0 ? reveal.salt : undefined;
+  if (salt !== undefined) {
+    if (options.password === undefined) {
+      throw new BurndropError("this link needs the reveal password the human set; pass options.password");
+    }
+    key = await revealKeyWithPassword(reveal.key, options.password, salt);
+  }
   const { ciphertext } = await client.open(reveal.id, reveal.revealToken, options.signal);
   let env: Envelope;
   try {
-    env = await decryptEnvelope(reveal.key, ciphertext, revealAad(reveal.name, reveal.keepsCopy));
+    env = await decryptEnvelope(key, ciphertext, revealAad(reveal.name, reveal.keepsCopy));
   } catch (err) {
     if (err instanceof RelayError) {
       throw err;
     }
-    throw new BurndropError(
-      "the secret could not be decrypted: the link was altered or the relay returned the wrong data; the relay copy is gone, ask the agent to send it again",
-      { cause: err },
-    );
+    const why = salt !== undefined ? "wrong reveal password or altered link" : "the link was altered or the relay returned the wrong data";
+    throw new BurndropError("the secret could not be decrypted: " + why + "; the relay copy is gone, ask the agent to send it again", { cause: err });
   } finally {
     zero(reveal.key);
+    if (key !== reveal.key) {
+      zero(key);
+    }
   }
   return { name: env.name, value: secretBytes(env), format: env.format, keepsCopy: reveal.keepsCopy, relay };
 }

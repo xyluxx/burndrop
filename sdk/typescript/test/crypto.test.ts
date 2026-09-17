@@ -1,4 +1,4 @@
-import sodium from "libsodium-wrappers";
+import sodium from "libsodium-wrappers-sumo";
 import { describe, expect, it } from "vitest";
 
 import {

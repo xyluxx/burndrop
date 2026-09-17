@@ -43,6 +43,8 @@ type Drop struct {
 }
 
 // Reveal is an agent-to-human link: the reveal token and the decryption key.
+// Salt is set only for a password-protected reveal; the page then asks for
+// the password and derives the real key from Key, the password, and Salt.
 type Reveal struct {
 	Relay       string
 	ID          string
@@ -50,6 +52,12 @@ type Reveal struct {
 	Key         []byte // 32 bytes
 	Name        string
 	KeepsCopy   bool
+	Salt        []byte // nil, or 16 bytes when a password is required
+}
+
+// PasswordProtected reports whether opening the link needs the reveal password.
+func (r Reveal) PasswordProtected() bool {
+	return len(r.Salt) > 0
 }
 
 // Parsed is the result of Parse: exactly one of Drop or Reveal is set.
@@ -141,6 +149,9 @@ func (r Reveal) Validate() error {
 	if err := crypto.ValidateName(r.Name); err != nil {
 		return fmt.Errorf("%w: %v", ErrLink, err)
 	}
+	if len(r.Salt) != 0 && len(r.Salt) != crypto.SaltSize {
+		return fmt.Errorf("%w: salt must be %d bytes", ErrLink, crypto.SaltSize)
+	}
 	return nil
 }
 
@@ -164,6 +175,9 @@ func (r Reveal) Build(pageOrigin string) (string, error) {
 		{"k", crypto.Encoding.EncodeToString(r.Key)},
 		{"n", r.Name},
 		{"c", c},
+	}
+	if len(r.Salt) > 0 {
+		fields = append(fields, field{"s", crypto.Encoding.EncodeToString(r.Salt)})
 	}
 	if r.Relay != "" {
 		relay, _ := NormalizeOrigin(r.Relay)
@@ -401,8 +415,19 @@ func parseDrop(frag string) (Drop, error) {
 	return d, nil
 }
 
+func decodeSalt(s string) ([]byte, error) {
+	if len(s) != 22 {
+		return nil, fmt.Errorf("%w: salt must be 22 base64url characters", ErrLink)
+	}
+	b, err := crypto.Encoding.DecodeString(s)
+	if err != nil || len(b) != crypto.SaltSize {
+		return nil, fmt.Errorf("%w: salt is not valid base64url", ErrLink)
+	}
+	return b, nil
+}
+
 func parseReveal(frag string) (Reveal, error) {
-	m, err := parseFields(frag, []string{"v", "i", "o", "k", "n", "c", "r"})
+	m, err := parseFields(frag, []string{"v", "i", "o", "k", "n", "c", "s", "r"})
 	if err != nil {
 		return Reveal{}, err
 	}
@@ -422,6 +447,12 @@ func parseReveal(frag string) (Reveal, error) {
 		return Reveal{}, fmt.Errorf("%w: field c must be 0 or 1", ErrLink)
 	}
 	r := Reveal{ID: m["i"], RevealToken: m["o"], Key: key, Name: m["n"], KeepsCopy: keeps}
+	if s := m["s"]; s != "" {
+		r.Salt, err = decodeSalt(s)
+		if err != nil {
+			return Reveal{}, err
+		}
+	}
 	if rel := m["r"]; rel != "" {
 		r.Relay, err = NormalizeOrigin(rel)
 		if err != nil {

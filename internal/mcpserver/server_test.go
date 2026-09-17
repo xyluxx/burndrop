@@ -146,7 +146,7 @@ func TestToolList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]bool{"request_secret": false, "fetch_secret": false, "send_secret": true, "run_with_secret": true, "list_secrets": false, "delete_secret": true, "revoke_request": true}
+	want := map[string]bool{"request_secret": false, "fetch_secret": false, "send_secret": true, "run_with_secret": true, "list_secrets": false, "delete_secret": true, "revoke_request": true, "reveal_password": false}
 	if len(res.Tools) != len(want) {
 		t.Fatalf("got %d tools", len(res.Tools))
 	}
@@ -343,4 +343,52 @@ func shellFor(t *testing.T) (string, string) {
 	}
 	t.Skip("no shell")
 	return "", ""
+}
+
+func TestRevealPasswordTool(t *testing.T) {
+	f := newFixture(t, false)
+	// Nothing set: the report says so and turning it on fails.
+	_, out := f.call(t, "reveal_password", nil)
+	if out["required"] != false || out["configured"] != false || !strings.Contains(out["message"].(string), "reveal-password set") {
+		t.Fatalf("status: %v", out)
+	}
+	res, _ := f.call(t, "reveal_password", map[string]any{"required": true})
+	if !res.IsError || !strings.Contains(errText(res), "reveal-password set") {
+		t.Fatalf("enable without a password: %+v", res)
+	}
+	if f.agent.Config.RevealPasswordRequired {
+		t.Fatal("requirement turned on without a password")
+	}
+
+	// The human set one in a terminal: the agent can toggle the requirement
+	// and send_secret links carry a salt while it is on.
+	f.agent.Config.RevealPassword = "env:BURNDROP_TEST_PW"
+	f.agent.PasswordSource = func() ([]byte, error) { return []byte("correct horse battery staple"), nil }
+	_, out = f.call(t, "reveal_password", map[string]any{"required": true})
+	if out["required"] != true || out["configured"] != true {
+		t.Fatalf("enable: %v", out)
+	}
+	if _, err := f.agent.Store.Put(context.Background(), "gen", []byte("tok-1"), storage.Metadata{Retention: storage.RetentionSession, Sendable: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, sent := f.call(t, "send_secret", map[string]any{"name": "gen"})
+	if res.IsError {
+		t.Fatalf("send with password: %s", errText(res))
+	}
+	if sent["password_protected"] != true || !strings.Contains(sent["link"].(string), "&s=") || !strings.Contains(sent["message"].(string), "reveal password") {
+		t.Fatalf("send with password: %v", sent)
+	}
+	_, out = f.call(t, "reveal_password", map[string]any{"required": false})
+	if out["required"] != false || out["configured"] != true || !strings.Contains(out["message"].(string), "not required") {
+		t.Fatalf("disable: %v", out)
+	}
+	_, sent = f.call(t, "send_secret", map[string]any{"name": "gen"})
+	if sent["password_protected"] != false || strings.Contains(sent["link"].(string), "&s=") {
+		t.Fatalf("send without password: %v", sent)
+	}
+	for _, raw := range f.results {
+		if strings.Contains(raw, "correct horse") || strings.Contains(raw, "tok-1") {
+			t.Fatal("a password or value leaked into a tool result")
+		}
+	}
 }

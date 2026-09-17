@@ -75,6 +75,8 @@ storage = "keychain"
 agent_key = "keychain:burndrop/agent-key"   # or "env:BURNDROP_API_KEY"; never a plain value
 default_ttl = "1h"
 default_retention = "until-revoked"
+reveal_password = "keychain:burndrop/reveal-password"   # written by burndrop reveal-password set; or "env:<VARIABLE>"
+reveal_password_required = true                        # every send_secret link asks for the password
 
 [backends.keychain]
 service = "burndrop"          # credential store service name; also used for the agevault key and the agent key

@@ -3,7 +3,7 @@
 // must have their exact length, and text fields are bounded.
 
 import * as b64 from "./base64.js";
-import { validateName, validateRetention, validateText, validToken, KEY_SIZE } from "./crypto.js";
+import { validateName, validateRetention, validateText, validToken, KEY_SIZE, SALT_SIZE } from "./crypto.js";
 
 export class LinkError extends Error {}
 
@@ -27,6 +27,8 @@ export interface RevealLink {
   key: Uint8Array;
   name: string;
   keepsCopy: boolean;
+  /** 16 bytes when the reveal needs the password the human set; null otherwise. */
+  salt?: Uint8Array | null;
 }
 
 export type ParsedLink = DropLink | RevealLink;
@@ -115,6 +117,22 @@ function decodeKey(s: string): Uint8Array {
   }
 }
 
+function decodeSalt(s: string): Uint8Array {
+  if (s.length !== 22) {
+    throw new LinkError("salt must be 22 characters");
+  }
+  let b: Uint8Array;
+  try {
+    b = b64.decode(s);
+  } catch {
+    throw new LinkError("salt is not base64url");
+  }
+  if (b.length !== SALT_SIZE) {
+    throw new LinkError("salt is not base64url");
+  }
+  return b;
+}
+
 function relayField(m: Map<string, string>): string | null {
   const r = m.get("r");
   return r ? normalizeOrigin(r) : null;
@@ -151,7 +169,7 @@ export function parseDropFragment(frag: string): DropLink {
 }
 
 export function parseRevealFragment(frag: string): RevealLink {
-  const m = parseFields(frag, ["v", "i", "o", "k", "n", "c", "r"]);
+  const m = parseFields(frag, ["v", "i", "o", "k", "n", "c", "s", "r"]);
   required(m, ["i", "o", "k", "n", "c"]);
   const id = m.get("i")!;
   const revealToken = m.get("o")!;
@@ -162,6 +180,7 @@ export function parseRevealFragment(frag: string): RevealLink {
   if (c !== "0" && c !== "1") {
     throw new LinkError("field c must be 0 or 1");
   }
+  const salt = m.get("s");
   const r: RevealLink = {
     kind: "reveal",
     relay: relayField(m),
@@ -170,6 +189,7 @@ export function parseRevealFragment(frag: string): RevealLink {
     key: decodeKey(m.get("k")!),
     name: m.get("n")!,
     keepsCopy: c === "1",
+    salt: salt ? decodeSalt(salt) : null,
   };
   try {
     validateName(r.name);
@@ -240,6 +260,9 @@ export function buildRevealLink(pageOrigin: string, r: Omit<RevealLink, "kind">)
     ["n", r.name],
     ["c", r.keepsCopy ? "1" : "0"],
   ];
+  if (r.salt && r.salt.length > 0) {
+    fields.push(["s", b64.encode(r.salt)]);
+  }
   if (r.relay) {
     fields.push(["r", r.relay]);
   }

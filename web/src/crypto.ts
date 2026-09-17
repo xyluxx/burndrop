@@ -1,5 +1,5 @@
 // The audited cryptographic module of the drop page. It has no dependency
-// other than libsodium-wrappers and WebCrypto SHA-256, no DOM access, and
+// other than libsodium-wrappers-sumo and WebCrypto SHA-256, no DOM access, and
 // matches internal/crypto in Go byte for byte (spec/vectors.json).
 //
 // Primitives (docs/design.md section 5): libsodium sealed boxes for human to
@@ -7,7 +7,7 @@
 // ISO/IEC 7816-4 padding to 256 byte blocks, SHA-256 fingerprints and
 // commitments, and a fixed JSON envelope.
 
-import sodium from "libsodium-wrappers";
+import sodium from "libsodium-wrappers-sumo";
 import * as b64 from "./base64.js";
 
 export const KEY_SIZE = 32;
@@ -427,6 +427,38 @@ export function decryptEnvelope(key: Uint8Array, blob: Uint8Array, aad: Uint8Arr
 
 export function zero(buf: Uint8Array): void {
   sodium.memzero(buf);
+}
+
+// Password-protected reveals (docs/crypto-spec.md section 4.1): the link
+// carries a key and a salt, and the real key mixes in Argon2id of the
+// password the human set. Parameters are libsodium's interactive limits.
+export const SALT_SIZE = 16;
+export const PASSWORD_OPSLIMIT = 2;
+export const PASSWORD_MEMLIMIT = 64 * 1024 * 1024;
+const PASSWORD_DOMAIN = "burndrop/reveal-password/v1";
+
+/** passwordKey derives 32 bytes from a password with Argon2id 1.3 (time 2, memory 64 MiB, one lane). */
+export function passwordKey(password: string, salt: Uint8Array): Uint8Array {
+  if (password === "") {
+    throw new CryptoError("password must not be empty");
+  }
+  requireLength(salt, SALT_SIZE, "salt");
+  return sodium.crypto_pwhash(KEY_SIZE, new TextEncoder().encode(password), salt, PASSWORD_OPSLIMIT, PASSWORD_MEMLIMIT, sodium.crypto_pwhash_ALG_ARGON2ID13);
+}
+
+/** revealKeyWithPassword is BLAKE2b-256(domain || linkKey || passwordKey), the key of a password-protected reveal. */
+export function revealKeyWithPassword(linkKey: Uint8Array, password: string, salt: Uint8Array): Uint8Array {
+  requireLength(linkKey, KEY_SIZE, "key");
+  const pk = passwordKey(password, salt);
+  const domain = new TextEncoder().encode(PASSWORD_DOMAIN);
+  const msg = new Uint8Array(domain.length + KEY_SIZE * 2);
+  msg.set(domain, 0);
+  msg.set(linkKey, domain.length);
+  msg.set(pk, domain.length + KEY_SIZE);
+  const out = sodium.crypto_generichash(KEY_SIZE, msg, null);
+  sodium.memzero(msg);
+  sodium.memzero(pk);
+  return out;
 }
 
 /** validToken reports whether s is a 22 character base64url token (16 bytes). */

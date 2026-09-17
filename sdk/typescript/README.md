@@ -24,7 +24,7 @@ npm install @burndrop/sdk
 ```
 
 Requirements: Node 22.13 or newer (global `fetch`, WebCrypto, `AbortSignal.any`).
-The only runtime dependency is `libsodium-wrappers` (pinned).
+The only runtime dependency is `libsodium-wrappers-sumo` (pinned).
 
 ## Quick start
 
@@ -65,6 +65,7 @@ if (result.status === "received") {
 const sent = await agent.sendSecret("staging-db-url", "postgres://app:s3cret@db.staging.example:5432/app", {
   ttlSeconds: 600,
   keepsCopy: false, // tell the human the truth about your own copy
+  // password: "...", // the page then asks for this password before showing the value
 });
 console.log(sent.message); // link, "opens once", expiry, copy note
 
@@ -102,6 +103,7 @@ await human.submit(dropLink, "sk-live-...");
 // What the reveal page does: open once, decrypt with the key in the link and
 // the display fields as additional data.
 const { value, name } = await human.open(revealLink);
+// Links that carry a salt need the reveal password: human.open(link, { password: "..." })
 ```
 
 ### Relay client only
@@ -166,7 +168,7 @@ export the corresponding module only.
 | `new Agent(options)` | `relay` (origin) and optional `apiKey`, or a prepared `client`; `pageOrigin` (default: the relay), `clientName` (X-Client header), `fetch`, `timeoutMs`, `defaultTtlSeconds` (3600), `defaultRetention` (`until-revoked`), `defaultStorage`, `now`. |
 | `requestSecret(name, purpose, options?)` | Creates a drop slot. Options: `retention`, `storage`, `ttlSeconds`, `signal`. Returns `{ requestId, link, fingerprint, expiresAt, storage, retention, name, purpose, message }`. |
 | `fetchSecret(request, waitSeconds?, signal?)` | Waits up to `waitSeconds` (default 30, max 300) for the upload, then downloads, decrypts, and verifies. Returns `{ status, message, ... }` and, on `"received"`, `value` (Uint8Array), `format`, `sizeBytes`. Statuses: `waiting`, `received`, `expired`, `revoked`, `rejected`, `gone`. |
-| `sendSecret(name, value, options?)` | Encrypts for a human. Options: `ttlSeconds`, `keepsCopy` (default true), `signal`. Returns `{ requestId, link, expiresAt, keepsCopy, revokeToken, message }`. |
+| `sendSecret(name, value, options?)` | Encrypts for a human. Options: `ttlSeconds`, `keepsCopy` (default true), `password` (the page then asks for it; specification section 4.1), `signal`. Returns `{ requestId, link, expiresAt, keepsCopy, passwordProtected, revokeToken, message }`. |
 | `revoke(requestOrSendResult, signal?)` | Revokes a pending request (by id or result) or an unopened reveal (by `sendSecret` result). Returns the resulting relay state. |
 | `pending()` | Outstanding requests without their keys. |
 | `runWithSecret(command, args, secrets, options?)` | `runWithSecret` with the agent's redactor. |
@@ -191,7 +193,7 @@ entry of `secrets` as an environment variable. Options: `cwd`, `stdin`,
 | Function | Description |
 |---|---|
 | `submit(link, value, options?)` | Checks the drop link is still open, seals the value to its key with the fingerprint and display fields in the envelope, uploads with the key's commitment. Throws when the relay reports a commitment mismatch (altered link). Options: `relay` override, `clientName`, `fetch`, `timeoutMs`, `signal`. |
-| `open(link, options?)` | Checks the reveal link is unopened, opens it (this deletes the relay copy), decrypts with the key and the display fields as additional data. Returns `{ name, value, format, keepsCopy, relay }`. |
+| `open(link, options?)` | Checks the reveal link is unopened, opens it (this deletes the relay copy), decrypts with the key and the display fields as additional data. A link with a salt needs `options.password`, which is derived before the relay is asked. Returns `{ name, value, format, keepsCopy, relay }`. |
 
 Also exported as `submitDrop` and `openReveal` from the package root.
 

@@ -338,6 +338,61 @@ func TestFetchOutcomes(t *testing.T) {
 	}
 }
 
+func TestSendWithPassword(t *testing.T) {
+	ctx := context.Background()
+	h := newHarness(t)
+	a := h.agent
+	if _, err := a.Store.Put(ctx, "generated", []byte("generated-value"), storage.Metadata{Retention: storage.RetentionUntilRevoked, Source: storage.SourceCapture, Sendable: true}); err != nil {
+		t.Fatal(err)
+	}
+	a.Config.RevealPasswordRequired = true
+	if _, err := a.Send(ctx, SendInput{Name: "generated"}); !errors.Is(err, ErrNoRevealPassword) {
+		t.Fatalf("no password source: %v", err)
+	}
+	a.PasswordSource = func() ([]byte, error) { return []byte(""), nil }
+	if _, err := a.Send(ctx, SendInput{Name: "generated"}); !errors.Is(err, ErrNoRevealPassword) {
+		t.Fatalf("empty password: %v", err)
+	}
+	a.PasswordSource = func() ([]byte, error) { return []byte("correct horse battery staple"), nil }
+	out, err := a.Send(ctx, SendInput{Name: "generated"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !out.PasswordProtected || !strings.Contains(out.Message, "reveal password") || !strings.Contains(out.Link, "&s=") {
+		t.Fatalf("send output: %+v", out)
+	}
+	rv, _, err := link.ParseReveal(out.Link)
+	if err != nil || !rv.PasswordProtected() || len(rv.Salt) != crypto.SaltSize {
+		t.Fatalf("reveal link: %v %+v", err, rv)
+	}
+	ct, _, err := h.relay.Open(ctx, rv.ID, rv.RevealToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	linkKey, _ := crypto.KeyFromBytes(rv.Key)
+	if _, err := crypto.DecryptEnvelope(linkKey, ct, rv.AAD()); err == nil {
+		t.Fatal("the link key alone opened a password-protected reveal")
+	}
+	wrong, _ := crypto.RevealKeyWithPassword(linkKey, []byte("wrong password"), rv.Salt)
+	if _, err := crypto.DecryptEnvelope(wrong, ct, rv.AAD()); err == nil {
+		t.Fatal("a wrong password opened the reveal")
+	}
+	right, _ := crypto.RevealKeyWithPassword(linkKey, []byte("correct horse battery staple"), rv.Salt)
+	env, err := crypto.DecryptEnvelope(right, ct, rv.AAD())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := env.SecretBytes(); string(got) != "generated-value" {
+		t.Fatalf("opened: %+v", env)
+	}
+	// Off again: plain links, no salt.
+	a.Config.RevealPasswordRequired = false
+	out, err = a.Send(ctx, SendInput{Name: "generated"})
+	if err != nil || out.PasswordProtected || strings.Contains(out.Link, "&s=") || strings.Contains(out.Message, "reveal password") {
+		t.Fatalf("plain send: %v %+v", err, out)
+	}
+}
+
 func TestSend(t *testing.T) {
 	ctx := context.Background()
 	h := newHarness(t)

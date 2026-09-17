@@ -102,7 +102,11 @@ func (a *app) cmdOpen(ctx context.Context, args []string) error {
 	if !r.KeepsCopy {
 		keeps = "the agent has deleted its copy"
 	}
-	fmt.Fprintf(a.stderr, "An agent is sharing a secret with you.\n  name:  %s\n  note:  %s\n  relay: %s\n\nOpening it deletes it from the relay; it can be shown only once.\n", r.Name, keeps, relayOrigin)
+	password := ""
+	if r.PasswordProtected() {
+		password = "  password: required (the one you set with reveal-password)\n"
+	}
+	fmt.Fprintf(a.stderr, "An agent is sharing a secret with you.\n  name:  %s\n  note:  %s\n  relay: %s\n%s\nOpening it deletes it from the relay; it can be shown only once.\n", r.Name, keeps, relayOrigin, password)
 	rc, err := client.New(relayOrigin, "", "burndrop-cli/"+a.version)
 	if err != nil {
 		return err
@@ -124,18 +128,38 @@ func (a *app) cmdOpen(ctx context.Context, args []string) error {
 	if !ok {
 		return errors.New("cancelled; the secret is still on the relay until " + st.ExpiresAt.UTC().Format(time.RFC3339))
 	}
+	linkKey, err := crypto.KeyFromBytes(r.Key)
+	if err != nil {
+		return err
+	}
+	defer crypto.ZeroKey(linkKey)
+	// The password is asked before the open, so a human who does not know
+	// it can still quit without burning the secret.
+	var pw []byte
+	if r.PasswordProtected() {
+		pw, err = a.readSecret("Reveal password (not echoed): ")
+		if err != nil {
+			return err
+		}
+		if len(pw) == 0 {
+			return errors.New("cancelled; the secret is still on the relay until " + st.ExpiresAt.UTC().Format(time.RFC3339))
+		}
+	}
 	ct, _, err := rc.Open(ctx, r.ID, r.RevealToken)
 	if err != nil {
 		return err
 	}
-	key, err := crypto.KeyFromBytes(r.Key)
-	if err != nil {
-		return err
-	}
-	defer crypto.ZeroKey(key)
-	env, err := crypto.DecryptEnvelope(key, ct, r.AAD())
-	if err != nil {
-		return errors.New("the secret could not be decrypted: the link was altered or the relay returned the wrong data; the relay copy is gone, ask the agent to send it again")
+	var env crypto.Envelope
+	if r.PasswordProtected() {
+		env, err = a.decryptWithPassword(linkKey, r, ct, pw)
+		if err != nil {
+			return err
+		}
+	} else {
+		env, err = crypto.DecryptEnvelope(linkKey, ct, r.AAD())
+		if err != nil {
+			return errors.New("the secret could not be decrypted: the link was altered or the relay returned the wrong data; the relay copy is gone, ask the agent to send it again")
+		}
 	}
 	value, err := env.SecretBytes()
 	if err != nil {
@@ -150,6 +174,35 @@ func (a *app) cmdOpen(ctx context.Context, args []string) error {
 	}
 	fmt.Fprintln(a.stderr, "(the relay copy is deleted; store the value somewhere safe)")
 	return nil
+}
+
+// decryptWithPassword tries the password the human typed and, because the
+// relay copy is already gone, lets them retry a few times before giving up.
+func (a *app) decryptWithPassword(linkKey *[crypto.KeySize]byte, r link.Reveal, ct, pw []byte) (crypto.Envelope, error) {
+	const attempts = 5
+	for attempt := 1; ; attempt++ {
+		key, err := crypto.RevealKeyWithPassword(linkKey, pw, r.Salt)
+		zero(pw)
+		if err != nil {
+			return crypto.Envelope{}, err
+		}
+		env, err := crypto.DecryptEnvelope(key, ct, r.AAD())
+		crypto.ZeroKey(key)
+		if err == nil {
+			return env, nil
+		}
+		if attempt >= attempts {
+			return crypto.Envelope{}, errors.New("wrong password; the relay copy is gone, ask the agent to send it again")
+		}
+		fmt.Fprintln(a.stderr, "Wrong password. The relay copy is already gone, so try again here.")
+		pw, err = a.readSecret("Reveal password (not echoed): ")
+		if err != nil {
+			return crypto.Envelope{}, err
+		}
+		if len(pw) == 0 {
+			return crypto.Envelope{}, errors.New("no password entered; the relay copy is gone, ask the agent to send it again")
+		}
+	}
 }
 
 func zero(b []byte) {

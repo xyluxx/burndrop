@@ -8,7 +8,7 @@ new reader needs them.
 
 | Document | What it covers |
 | --- | --- |
-| [Agent integration](agent-integration.md) | Connecting MCP clients, the seven tools and their results, the instruction files, and using the CLI or the SDKs without MCP |
+| [Agent integration](agent-integration.md) | Connecting MCP clients, the eight tools and their results, the instruction files, and using the CLI or the SDKs without MCP |
 | [CLI reference](cli.md) | Every `burndrop` command, flag, exit code, and output format |
 | [Storage backends](storage-backends.md) | The twelve backends, how `init` chooses one, retention policies, and per-backend configuration |
 | [Browser extension](browser-extension.md) | What the extension protects against, installing it, and building it from source |

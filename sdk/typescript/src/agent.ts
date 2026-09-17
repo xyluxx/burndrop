@@ -15,10 +15,12 @@ import {
   encryptEnvelope,
   fingerprint,
   generateKeyPair,
+  newSalt,
   newSymmetricKey,
   openEnvelope,
   parseRfc3339,
   revealAad,
+  revealKeyWithPassword,
   secretBytes,
   secretField,
   validateText,
@@ -122,6 +124,8 @@ export interface SendOptions {
   ttlSeconds?: number;
   /** Whether the human is told that the agent keeps its own copy; default true. */
   keepsCopy?: boolean;
+  /** Protect the link with this reveal password: the page asks for it before showing the value. */
+  password?: string | Uint8Array;
   signal?: AbortSignal;
 }
 
@@ -131,6 +135,8 @@ export interface SendResult {
   link: string;
   expiresAt: Date;
   keepsCopy: boolean;
+  /** Whether the page asks for the reveal password before showing the value. */
+  passwordProtected: boolean;
   /** Token that revokes the reveal before it is opened; pass the result to revoke. */
   revokeToken: string;
   /** The text to relay to the human, with the link and the disclosures. */
@@ -241,12 +247,15 @@ function requestMessage(out: RequestResult): string {
 
 function sendMessage(out: SendResult): string {
   const copyNote = out.keepsCopy ? "I keep my copy of it." : "I have deleted my copy of it.";
+  const passwordNote = out.passwordProtected ? " The page asks for your reveal password before it shows the value." : "";
   return (
     "Here is " +
     out.name +
     ": " +
     out.link +
-    "\n\nThe link reveals the value once, after you press the button on the page, and then it is gone. It expires at " +
+    "\n\nThe link reveals the value once, after you press the button on the page, and then it is gone." +
+    passwordNote +
+    " It expires at " +
     formatUtcMinute(out.expiresAt) +
     ". " +
     copyNote +
@@ -551,11 +560,20 @@ export class Agent {
     const keepsCopy = options.keepsCopy ?? true;
     this.redactor.add(name, bytes);
     const key = await newSymmetricKey();
+    let encKey = key;
+    let salt: Uint8Array | undefined;
     try {
+      if (options.password !== undefined) {
+        salt = await newSalt();
+        encKey = await revealKeyWithPassword(key, options.password, salt);
+      }
       const env: Envelope = { v: 1, type: "reveal", name, ...secretField(bytes) };
-      const ciphertext = await encryptEnvelope(key, env, revealAad(name, keepsCopy));
+      const ciphertext = await encryptEnvelope(encKey, env, revealAad(name, keepsCopy));
       const created = await this.client.createReveal(ciphertext, ttl, options.signal);
       const reveal: RevealLink = { id: created.id, revealToken: created.revealToken, key, name, keepsCopy };
+      if (salt !== undefined) {
+        reveal.salt = salt;
+      }
       if (this.client.origin !== this.pageOrigin) {
         reveal.relay = this.client.origin;
       }
@@ -572,6 +590,7 @@ export class Agent {
         link,
         expiresAt: created.expiresAt,
         keepsCopy,
+        passwordProtected: salt !== undefined,
         revokeToken: created.revokeToken,
         message: "",
       };
@@ -579,6 +598,9 @@ export class Agent {
       return out;
     } finally {
       zero(key);
+      if (encKey !== key) {
+        zero(encKey);
+      }
     }
   }
 

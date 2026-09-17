@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 from . import crypto
 from .encoding import EncodingError, b64decode, b64encode
+from .password import SALT_SIZE
 
 __all__ = [
     "KIND_DROP",
@@ -43,8 +44,9 @@ MAX_LINK_BYTES = 8192
 MAX_ORIGIN_BYTES = 512
 
 _DROP_FIELDS = ("v", "i", "u", "k", "n", "p", "s", "t", "r")
-_REVEAL_FIELDS = ("v", "i", "o", "k", "n", "c", "r")
+_REVEAL_FIELDS = ("v", "i", "o", "k", "n", "c", "s", "r")
 _KEY_CHARS = 43
+_SALT_CHARS = 22
 _HOST_CHARS = frozenset(string.ascii_letters + string.digits + "-._~%[]:")
 _LOOPBACK = ("localhost", "127.0.0.1", "::1")
 
@@ -124,6 +126,12 @@ class RevealLink:
     key: bytes
     name: str
     keeps_copy: bool
+    salt: bytes = b""
+
+    @property
+    def password_protected(self) -> bool:
+        """Whether opening the link needs the reveal password the human set."""
+        return len(self.salt) > 0
 
     def validate(self) -> None:
         """Check every field of the link."""
@@ -135,6 +143,8 @@ class RevealLink:
             raise LinkError("malformed reveal token")
         if len(self.key) != crypto.KEY_SIZE:
             raise LinkError(f"key must be {crypto.KEY_SIZE} bytes")
+        if self.salt and len(self.salt) != SALT_SIZE:
+            raise LinkError(f"salt must be {SALT_SIZE} bytes")
         try:
             crypto.validate_name(self.name)
         except crypto.EnvelopeError as err:
@@ -152,6 +162,8 @@ class RevealLink:
             ("n", self.name),
             ("c", "1" if self.keeps_copy else "0"),
         ]
+        if self.salt:
+            fields.append(("s", b64encode(self.salt)))
         if self.relay:
             fields.append(("r", normalize_origin(self.relay)))
         return origin + PATH_REVEAL + "#" + _encode_fields(fields)
@@ -385,6 +397,18 @@ def _decode_key(text: str) -> bytes:
     return key
 
 
+def _decode_salt(text: str) -> bytes:
+    if len(text) != _SALT_CHARS:
+        raise LinkError(f"salt must be {_SALT_CHARS} base64url characters")
+    try:
+        salt = b64decode(text)
+    except EncodingError as err:
+        raise LinkError("salt is not valid base64url") from err
+    if len(salt) != SALT_SIZE:
+        raise LinkError("salt is not valid base64url")
+    return salt
+
+
 def _parse_drop(frag: str) -> DropLink:
     fields = _parse_fields(frag, _DROP_FIELDS)
     _require(fields, "i", "u", "k", "n", "t")
@@ -417,6 +441,7 @@ def _parse_reveal(frag: str) -> RevealLink:
         key=_decode_key(fields["k"]),
         name=fields["n"],
         keeps_copy=flag == "1",
+        salt=_decode_salt(fields["s"]) if fields.get("s") else b"",
     )
     link.validate()
     return link

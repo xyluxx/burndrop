@@ -17,15 +17,16 @@
  * with ISO/IEC 7816-4 padding before encryption, so the relay only learns a
  * coarse size class.
  *
- * The standard libsodium-wrappers build has no crypto_hash_sha256, so
- * fingerprints and commitments use WebCrypto's SHA-256, which every browser
- * and Node 22 provide as globalThis.crypto.subtle. Padding is implemented
+ * Fingerprints and commitments use WebCrypto's SHA-256, which every browser
+ * and Node 22 provide as globalThis.crypto.subtle, so the page and the SDK
+ * share one code path. The sumo build of libsodium-wrappers is needed for
+ * crypto_pwhash (Argon2id), which password-protected reveals use. Padding is implemented
  * here rather than with sodium_pad and sodium_unpad so that unpad enforces
  * exactly the Go rules (input length a positive multiple of the block).
  *
  * No Node-only imports: the browser page can reuse this module.
  */
-import sodium from "libsodium-wrappers";
+import sodium from "libsodium-wrappers-sumo";
 
 import { encodeBase64Url } from "./base64url.js";
 import { CryptoError } from "./errors.js";
@@ -331,5 +332,53 @@ export async function decryptEnvelope(key: Uint8Array, blob: Uint8Array, aad: Ui
     }
   } finally {
     zero(padded);
+  }
+}
+
+// Password-protected reveals (crypto spec section 4.1): the link carries a
+// key and a salt, and the real key mixes in Argon2id of the password the
+// human set. The parameters are libsodium's interactive limits.
+
+/** Size of the per-reveal password salt carried in the link. */
+export const SALT_SIZE = 16;
+/** Argon2id time cost (crypto_pwhash_OPSLIMIT_INTERACTIVE). */
+export const PASSWORD_OPSLIMIT = 2;
+/** Argon2id memory cost in bytes (crypto_pwhash_MEMLIMIT_INTERACTIVE, 64 MiB). */
+export const PASSWORD_MEMLIMIT = 64 * 1024 * 1024;
+const PASSWORD_DOMAIN = "burndrop/reveal-password/v1";
+
+/** Returns a random salt for one password-protected reveal. */
+export async function newSalt(): Promise<Uint8Array> {
+  await sodium.ready;
+  return sodium.randombytes_buf(SALT_SIZE);
+}
+
+/**
+ * Derives 32 bytes from a password with Argon2id 1.3 (time 2, memory 64 MiB,
+ * one lane). The password is used as typed, in UTF-8, with no normalization.
+ */
+export async function passwordKey(password: string | Uint8Array, salt: Uint8Array): Promise<Uint8Array> {
+  await sodium.ready;
+  const raw = typeof password === "string" ? new TextEncoder().encode(password) : password;
+  if (raw.length === 0) {
+    throw new CryptoError("length", "password must not be empty");
+  }
+  requireLength("salt", salt, SALT_SIZE);
+  return sodium.crypto_pwhash(KEY_SIZE, raw, salt, PASSWORD_OPSLIMIT, PASSWORD_MEMLIMIT, sodium.crypto_pwhash_ALG_ARGON2ID13);
+}
+
+/** Returns BLAKE2b-256(domain || linkKey || passwordKey), the key of a password-protected reveal. */
+export async function revealKeyWithPassword(linkKey: Uint8Array, password: string | Uint8Array, salt: Uint8Array): Promise<Uint8Array> {
+  requireLength("key", linkKey, KEY_SIZE);
+  const pk = await passwordKey(password, salt);
+  const domain = new TextEncoder().encode(PASSWORD_DOMAIN);
+  const msg = new Uint8Array(domain.length + KEY_SIZE * 2);
+  msg.set(domain, 0);
+  msg.set(linkKey, domain.length);
+  msg.set(pk, domain.length + KEY_SIZE);
+  try {
+    return sodium.crypto_generichash(KEY_SIZE, msg, null);
+  } finally {
+    zero(msg, pk);
   }
 }

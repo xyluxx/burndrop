@@ -27,8 +27,20 @@ func TestGenerateThenCheck(t *testing.T) {
 	if err := json.Unmarshal(raw, &f); err != nil {
 		t.Fatal(err)
 	}
-	if f.Version != 1 || f.Producer != "go" || len(f.Drops) != 3 || len(f.Reveals) != 3 {
+	if f.Version != 1 || f.Producer != "go" || len(f.Drops) != 3 || len(f.Reveals) != 4 {
 		t.Fatalf("unexpected file: %+v", f)
+	}
+	var protectedCases int
+	for _, r := range f.Reveals {
+		if r.Salt != "" {
+			protectedCases++
+			if r.Password == "" {
+				t.Fatalf("%s: salt without password", r.Name)
+			}
+		}
+	}
+	if protectedCases != 1 {
+		t.Fatalf("expected one password-protected reveal, got %d", protectedCases)
 	}
 	// The Go encoder reproduces its own plaintext byte for byte.
 	for _, d := range f.Drops {
@@ -42,7 +54,7 @@ func TestGenerateThenCheck(t *testing.T) {
 	if code := run([]string{"check", "-dir", dir}, &out, &errOut); code != 0 {
 		t.Fatalf("check: %d\n%s%s", code, out.String(), errOut.String())
 	}
-	if !strings.Contains(out.String(), "6 passed, 0 failed, 1 file(s)") {
+	if !strings.Contains(out.String(), "7 passed, 0 failed, 1 file(s)") {
 		t.Fatalf("check output: %s", out.String())
 	}
 }
