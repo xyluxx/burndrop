@@ -26,7 +26,7 @@ e2e: ## Playwright suite against a real relay (needs: cd web && npx playwright i
 
 screenshots: ## Regenerate docs/screenshots from the real page (needs ffmpeg and the Playwright browser)
 	cd web && node e2e/build-relay.mjs && BURNDROP_SCREENSHOTS=1 npx playwright test --project=screenshots
-	ffmpeg -y -loglevel error -i docs/screenshots/demo.webm -vf "fps=12,scale=600:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 docs/screenshots/demo.gif
+	ffmpeg -y -loglevel error -i docs/screenshots/demo.webm -vf "fps=12,scale=900:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 docs/screenshots/demo.gif
 	rm -f docs/screenshots/demo.webm
 
 test: ## Go unit tests

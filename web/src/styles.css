@@ -22,6 +22,7 @@
   --color-brand-700: #2a31d8;
   --color-brand-800: #252dae;
   --color-brand-900: #262e89;
+  --color-brand-950: #161950;
 
   --color-gray-25: #fcfcfd;
   --color-gray-50: #f9fafb;
@@ -84,7 +85,7 @@
     color-scheme: dark;
   }
   body {
-    @apply bg-white text-gray-800 font-sans antialiased dark:bg-gray-950 dark:text-gray-200 sm:bg-gray-50;
+    @apply bg-white text-gray-800 font-sans antialiased dark:bg-gray-900 dark:text-gray-200;
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -96,9 +97,10 @@
   }
 }
 
-/* Edge to edge on phones; a card only from the sm breakpoint up. */
-@utility card {
-  @apply w-full px-5 pt-8 pb-6 sm:max-w-xl sm:rounded-2xl sm:border sm:border-gray-200 sm:bg-white sm:p-8 sm:shadow-theme-sm sm:dark:border-gray-800 sm:dark:bg-gray-900;
+/* The brand panel background: a faint dot grid over the deep brand blue. */
+@utility dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
 
 @utility btn-primary {

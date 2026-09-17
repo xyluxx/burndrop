@@ -597,7 +597,7 @@ Each is a proposal. Items 1 to 5 are security improvements with no user-visible 
 17. **Optional two-step reveal confirmation** for organizations whose security sandboxes click buttons in links.
 18. **`verify-page` command and extension verify mode** (Code Verify pattern), so a hosted page can be checked against the published hash by anyone.
 
-- **Page copy reduced (2026-09-17, at the request of the owner).** The drop and reveal pages show the title, the secret name, the purpose sentence, the expiry countdown, the field, and the button. Storage, retention, the key fingerprint, and the reveal flags sit under a collapsed Details line instead of a metadata panel, and the explanatory paragraphs are gone. The agent instructions now tell the model to write the purpose for the page and to pick the ttl. On phones the page is edge to edge; from 640 px up it is a 576 px card.
+- **Page copy reduced and split layout (2026-09-17, at the request of the owner).** The drop page shows the title, two labeled rows (Why: the purpose sentence; Link expires: the countdown), the field, and the button. The reveal page shows What (the secret name) and Link expires. The name on the drop page, storage, retention, the key fingerprint, and the reveal flags sit under a collapsed Details line instead of a metadata panel, and the explanatory paragraphs are gone. The agent instructions now tell the model to write the purpose for the page and to pick the ttl. From 1024 px up the page is a two-panel layout like a sign-in screen: the form column on the left, a brand panel (glyph, wordmark, tagline) on the right. Below that it is a single column, edge to edge on phones, with the theme toggle fixed bottom right.
 
 ## 19. Open questions for approval
 

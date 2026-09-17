@@ -27,7 +27,7 @@
   <a href="docs/">Docs</a>
 </p>
 
-<p align="center"><img src="docs/screenshots/demo.gif" alt="A human pastes a secret into the drop page, presses Encrypt and send, and the page reports Delivered once the agent has stored it" width="600"></p>
+<p align="center"><img src="docs/screenshots/demo.gif" alt="A human pastes a secret into the drop page, presses Encrypt and send, and the page reports Delivered once the agent has stored it" width="100%"></p>
 
 ## Why
 
@@ -62,7 +62,7 @@ human through a link that opens once and never passes through the chat.
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/drop-waiting-light.png" alt="Drop page in light mode showing the request details, the key fingerprint, and the masked secret field" width="300"></td>
+    <td><img src="docs/screenshots/drop-waiting-light.png" alt="Drop page in light mode showing the purpose, the expiry countdown, and the masked secret field next to the brand panel" width="300"></td>
     <td><img src="docs/screenshots/drop-waiting-dark.png" alt="The same drop page in dark mode" width="300"></td>
     <td><img src="docs/screenshots/reveal-revealed-light.png" alt="Reveal page after the click, showing the secret masked with copy and show buttons" width="300"></td>
   </tr>

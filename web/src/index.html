@@ -10,71 +10,100 @@
     <style>__CSS__</style>
   </head>
   <body class="min-h-screen">
-    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:shadow-theme-md dark:focus:bg-gray-800">Skip to content</a>
-    <div class="flex min-h-screen flex-col sm:items-center sm:justify-center sm:px-4 sm:py-8">
-      <main id="main" class="card fade-in" data-state="loading" tabindex="-1">
-        <div class="flex items-start gap-4">
-          <span id="state-icon" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-500 dark:bg-brand-500/10" aria-hidden="true"></span>
-          <div class="min-w-0 flex-1">
-            <h1 id="state-title" class="text-theme-xl font-semibold text-gray-900 dark:text-white" tabindex="-1">Checking the link</h1>
-            <p id="ctx-name" class="hidden-state mt-1 break-all font-mono text-theme-sm text-gray-700 dark:text-gray-300"></p>
-            <p id="ctx-purpose" class="hidden-state mt-1 break-words whitespace-pre-line text-theme-sm text-gray-600 dark:text-gray-400"></p>
-            <p id="state-text" class="hidden-state mt-1 text-theme-sm text-gray-600 dark:text-gray-400"></p>
-            <p id="ctx-expires" class="hidden-state mt-1 text-theme-xs text-gray-500 dark:text-gray-400"></p>
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:shadow-theme-md dark:focus:bg-gray-800">Skip to content</a>
+    <div class="flex min-h-screen w-full flex-col lg:flex-row">
+      <div class="flex w-full flex-1 flex-col px-5 pt-8 pb-24 sm:px-10 lg:w-1/2 lg:px-16">
+        <main id="main" class="fade-in mx-auto flex w-full max-w-md flex-1 flex-col justify-center" data-state="loading" tabindex="-1">
+          <div class="flex items-start gap-4">
+            <span id="state-icon" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-500 dark:bg-brand-500/10" aria-hidden="true"></span>
+            <div class="min-w-0 flex-1 pt-1">
+              <h1 id="state-title" class="text-title-xs font-semibold text-gray-900 outline-none dark:text-white" tabindex="-1">Checking the link</h1>
+              <p id="state-text" class="hidden-state mt-1 text-theme-sm text-gray-600 dark:text-gray-400"></p>
+            </div>
           </div>
-        </div>
 
-        <form id="drop-form" class="hidden-state mt-6" novalidate>
-          <label for="secret" class="sr-only">The secret</label>
-          <div class="relative">
-            <textarea id="secret" name="secret" rows="3" class="field masked pr-12" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste the secret here" required></textarea>
-            <button type="button" id="toggle-mask" class="absolute top-2 right-2 rounded-md p-1.5 text-gray-500 hover:text-gray-700 focus-visible:outline-none focus-visible:shadow-focus-ring dark:text-gray-400 dark:hover:text-gray-200" aria-pressed="false" aria-label="Show the secret"></button>
-          </div>
-          <p id="mask-note" class="hidden-state mt-1.5 text-theme-xs text-warning-600">This browser cannot hide multi-line text; the value is shown while you paste.</p>
-          <button type="submit" id="send" class="btn-primary mt-4">Encrypt and send</button>
-        </form>
-
-        <div id="reveal-panel" class="hidden-state mt-6">
-          <button type="button" id="reveal" class="btn-primary">Reveal credentials</button>
-        </div>
-
-        <div id="value-panel" class="hidden-state mt-6">
-          <label for="value" class="sr-only">The secret</label>
-          <textarea id="value" class="field masked" rows="4" readonly spellcheck="false"></textarea>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <button type="button" id="copy" class="btn-secondary">Copy</button>
-            <button type="button" id="toggle-value" class="btn-secondary" aria-pressed="false">Show</button>
-            <button type="button" id="clear-clipboard" class="btn-secondary">Clear clipboard</button>
-          </div>
-          <p id="copy-status" class="mt-2 text-theme-xs text-gray-500 dark:text-gray-400"></p>
-        </div>
-
-        <details id="context" class="hidden-state mt-6 text-theme-xs text-gray-500 dark:text-gray-400">
-          <summary class="cursor-pointer select-none rounded-md focus-visible:outline-none focus-visible:shadow-focus-ring">Details</summary>
-          <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-            <dt id="ctx-storage-label">Stored in</dt>
-            <dd id="ctx-storage" class="min-w-0 break-words text-gray-700 dark:text-gray-300"></dd>
-            <dt id="ctx-retention-label">Kept</dt>
-            <dd id="ctx-retention" class="min-w-0 break-words text-gray-700 dark:text-gray-300"></dd>
-            <dt id="ctx-opens-label">Opens</dt>
-            <dd id="ctx-opens" class="text-gray-700 dark:text-gray-300">once</dd>
-            <dt id="ctx-copy-label">Agent keeps a copy</dt>
-            <dd id="ctx-copy" class="text-gray-700 dark:text-gray-300"></dd>
-            <dt id="ctx-fingerprint-label">Key</dt>
-            <dd id="ctx-fingerprint" class="font-mono tracking-wide text-gray-700 dark:text-gray-300"></dd>
+          <dl id="facts" class="hidden-state mt-7 divide-y divide-gray-200 border-y border-gray-200 text-theme-sm dark:divide-gray-800 dark:border-gray-800">
+            <div id="row-what" class="grid grid-cols-[6.5rem_1fr] gap-4 py-3">
+              <dt class="text-gray-500 dark:text-gray-400">What</dt>
+              <dd id="ctx-name" class="min-w-0 break-all font-medium text-gray-900 dark:text-white"></dd>
+            </div>
+            <div id="row-why" class="grid grid-cols-[6.5rem_1fr] gap-4 py-3">
+              <dt class="text-gray-500 dark:text-gray-400">Why</dt>
+              <dd id="ctx-purpose" class="min-w-0 break-words whitespace-pre-line text-gray-900 dark:text-white"></dd>
+            </div>
+            <div id="row-expires" class="grid grid-cols-[6.5rem_1fr] gap-4 py-3">
+              <dt class="text-gray-500 dark:text-gray-400">Link expires</dt>
+              <dd id="ctx-expires" class="text-gray-900 dark:text-white"></dd>
+            </div>
           </dl>
-        </details>
-        <div id="status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-      </main>
 
-      <footer class="mt-auto flex w-full items-center justify-between px-5 py-4 text-theme-xs text-gray-500 dark:text-gray-400 sm:mt-6 sm:max-w-xl sm:px-0 sm:py-0">
-        <span id="version">burndrop</span>
-        <div class="flex items-center gap-3">
+          <form id="drop-form" class="hidden-state mt-6" novalidate>
+            <label for="secret" class="sr-only">The secret</label>
+            <div class="relative">
+              <textarea id="secret" name="secret" rows="3" class="field masked pr-12" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste the secret here" required></textarea>
+              <button type="button" id="toggle-mask" class="absolute top-2 right-2 rounded-md p-1.5 text-gray-500 hover:text-gray-700 focus-visible:outline-none focus-visible:shadow-focus-ring dark:text-gray-400 dark:hover:text-gray-200" aria-pressed="false" aria-label="Show the secret"></button>
+            </div>
+            <p id="mask-note" class="hidden-state mt-1.5 text-theme-xs text-warning-600">This browser cannot hide multi-line text; the value is shown while you paste.</p>
+            <button type="submit" id="send" class="btn-primary mt-4">Encrypt and send</button>
+          </form>
+
+          <div id="reveal-panel" class="hidden-state mt-6">
+            <button type="button" id="reveal" class="btn-primary">Reveal credentials</button>
+          </div>
+
+          <div id="value-panel" class="hidden-state mt-6">
+            <label for="value" class="sr-only">The secret</label>
+            <textarea id="value" class="field masked" rows="4" readonly spellcheck="false"></textarea>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button type="button" id="copy" class="btn-secondary">Copy</button>
+              <button type="button" id="toggle-value" class="btn-secondary" aria-pressed="false">Show</button>
+              <button type="button" id="clear-clipboard" class="btn-secondary">Clear clipboard</button>
+            </div>
+            <p id="copy-status" class="mt-2 text-theme-xs text-gray-500 dark:text-gray-400"></p>
+          </div>
+
+          <details id="context" class="hidden-state mt-6 text-theme-xs text-gray-500 dark:text-gray-400">
+            <summary class="cursor-pointer select-none rounded-md focus-visible:outline-none focus-visible:shadow-focus-ring">Details</summary>
+            <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+              <dt id="ctx-name-detail-label">Name</dt>
+              <dd id="ctx-name-detail" class="min-w-0 break-all font-mono text-gray-700 dark:text-gray-300"></dd>
+              <dt id="ctx-storage-label">Stored in</dt>
+              <dd id="ctx-storage" class="min-w-0 break-words text-gray-700 dark:text-gray-300"></dd>
+              <dt id="ctx-retention-label">Kept</dt>
+              <dd id="ctx-retention" class="min-w-0 break-words text-gray-700 dark:text-gray-300"></dd>
+              <dt id="ctx-opens-label">Opens</dt>
+              <dd id="ctx-opens" class="text-gray-700 dark:text-gray-300">once</dd>
+              <dt id="ctx-copy-label">Agent keeps a copy</dt>
+              <dd id="ctx-copy" class="text-gray-700 dark:text-gray-300"></dd>
+              <dt id="ctx-fingerprint-label">Key</dt>
+              <dd id="ctx-fingerprint" class="font-mono tracking-wide text-gray-700 dark:text-gray-300"></dd>
+            </dl>
+          </details>
+          <div id="status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+        </main>
+
+        <footer class="mx-auto mt-8 flex w-full max-w-md items-center justify-between text-theme-xs text-gray-500 dark:text-gray-400">
+          <span id="version">burndrop</span>
           <a id="verify-link" href="https://github.com/burndrop/burndrop/blob/main/docs/release-verification.md" rel="noopener noreferrer" target="_blank" class="underline decoration-gray-300 underline-offset-2 hover:text-gray-700 dark:decoration-gray-700 dark:hover:text-gray-200">Verify this page</a>
-          <button type="button" id="theme" class="rounded-md p-1.5 hover:text-gray-700 focus-visible:outline-none focus-visible:shadow-focus-ring dark:hover:text-gray-200" aria-label="Switch to dark theme"></button>
+        </footer>
+      </div>
+
+      <aside class="dots relative hidden w-full items-center justify-center overflow-hidden bg-brand-950 lg:flex lg:w-1/2" aria-hidden="true">
+        <div class="absolute h-96 w-96 rounded-full bg-brand-500/25 blur-3xl"></div>
+        <div class="relative flex max-w-sm flex-col items-center px-8 text-center">
+          <svg width="96" height="96" viewBox="0 0 168 168" role="presentation">
+            <rect width="168" height="168" rx="40" fill="#465fff"/>
+            <path d="M84 34c-22 30-40 54-40 78a40 40 0 0 0 80 0c0-24-18-48-40-78Z" fill="#ffffff" opacity="0.95"/>
+            <rect x="62" y="104" width="44" height="34" rx="8" fill="#465fff"/>
+            <path d="M70 104v-8a14 14 0 0 1 28 0v8" fill="none" stroke="#465fff" stroke-width="6" stroke-linecap="round"/>
+            <circle cx="84" cy="121" r="4" fill="#ffffff"/>
+          </svg>
+          <p class="mt-6 text-title-sm font-semibold tracking-tight text-white">burndrop</p>
+          <p class="mt-3 text-theme-sm text-gray-400">Give an AI agent a secret without pasting it in the chat.</p>
         </div>
-      </footer>
+      </aside>
     </div>
+    <button type="button" id="theme" class="fixed right-5 bottom-5 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-brand-500 text-white shadow-theme-lg transition hover:bg-brand-600 focus-visible:outline-none focus-visible:shadow-focus-ring" aria-label="Switch to dark theme"></button>
     <script>__JS__</script>
   </body>
 </html>

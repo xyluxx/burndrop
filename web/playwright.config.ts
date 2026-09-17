@@ -38,7 +38,7 @@ export default defineConfig({
       : []),
     // README material, produced on demand: BURNDROP_SCREENSHOTS=1 npx playwright test --project=screenshots
     ...(process.env["BURNDROP_SCREENSHOTS"] === "1"
-      ? [{ name: "screenshots", testMatch: /screenshots\.spec\.ts/, use: { ...devices["Desktop Chrome"], viewport: { width: 800, height: 620 }, deviceScaleFactor: 2, video: { mode: "on" as const, size: { width: 800, height: 620 } } } }]
+      ? [{ name: "screenshots", testMatch: /screenshots\.spec\.ts/, use: { ...devices["Desktop Chrome"], viewport: { width: 1200, height: 720 }, deviceScaleFactor: 2, video: { mode: "on" as const, size: { width: 1200, height: 720 } } } }]
       : []),
   ],
 });

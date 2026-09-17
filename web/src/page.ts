@@ -53,8 +53,12 @@ class Page {
   private readonly icon = el<HTMLElement>("state-icon");
   private readonly title = el<HTMLHeadingElement>("state-title");
   private readonly text = el<HTMLParagraphElement>("state-text");
-  private readonly name = el<HTMLParagraphElement>("ctx-name");
-  private readonly purpose = el<HTMLParagraphElement>("ctx-purpose");
+  private readonly facts = el<HTMLElement>("facts");
+  private readonly rowWhat = el<HTMLElement>("row-what");
+  private readonly rowWhy = el<HTMLElement>("row-why");
+  private readonly rowExpires = el<HTMLElement>("row-expires");
+  private readonly name = el<HTMLElement>("ctx-name");
+  private readonly purpose = el<HTMLElement>("ctx-purpose");
   private readonly status = el<HTMLDivElement>("status");
   private readonly context = el<HTMLElement>("context");
   private readonly form = el<HTMLFormElement>("drop-form");
@@ -127,8 +131,10 @@ class Page {
     if (this.mode === "drop") {
       const d = this.drop!;
       this.name.textContent = d.name;
+      el("ctx-name-detail").textContent = d.name;
       this.purpose.textContent = d.purpose;
-      show(this.purpose, d.purpose !== "");
+      show(this.rowWhat, false);
+      show(this.rowWhy, d.purpose !== "");
       el("ctx-storage").textContent = d.storage || "(not stated)";
       el("ctx-retention").textContent = describeRetention(d.retention);
       el("ctx-fingerprint").textContent = await c.fingerprint(d.recipientKey);
@@ -137,9 +143,10 @@ class Page {
       const r = this.reveal!;
       this.name.textContent = r.name;
       el("ctx-copy").textContent = r.keepsCopy ? "yes" : "no";
-      hide("ctx-storage-label", "ctx-storage", "ctx-retention-label", "ctx-retention", "ctx-fingerprint-label", "ctx-fingerprint");
+      show(this.rowWhat, true);
+      show(this.rowWhy, false);
+      hide("ctx-name-detail-label", "ctx-name-detail", "ctx-storage-label", "ctx-storage", "ctx-retention-label", "ctx-retention", "ctx-fingerprint-label", "ctx-fingerprint");
     }
-    show(this.name, true);
     this.context.classList.remove("hidden-state");
   }
 
@@ -177,7 +184,7 @@ class Page {
     const tick = (): void => {
       if (!this.expiresAt) return;
       const left = formatCountdown(this.expiresAt, new Date());
-      this.expires.textContent = left === "expired" ? "Expired" : `Expires in ${left}`;
+      this.expires.textContent = left === "expired" ? "expired" : `in ${left}`;
       if (left === "expired" && (this.state === "waiting" || this.state === "ready")) {
         this.setState("expired");
       }
@@ -367,7 +374,7 @@ class Page {
     this.title.textContent = copy.title;
     this.text.textContent = copy.text;
     show(this.text, copy.text !== "");
-    show(this.expires, next === "waiting" || next === "sending" || next === "sent" || next === "ready" || next === "revealing");
+    show(this.rowExpires, next === "waiting" || next === "sending" || next === "sent" || next === "ready" || next === "revealing");
     show(this.form, this.mode === "drop" && (next === "waiting" || next === "sending"));
     this.sendButton.disabled = next !== "waiting";
     this.secret.disabled = next !== "waiting";
@@ -375,8 +382,7 @@ class Page {
     this.revealButton.disabled = next !== "ready";
     show(this.valuePanel, next === "revealed");
     show(this.context, next !== "error" && next !== "loading");
-    show(this.name, next !== "error" && next !== "loading");
-    show(this.purpose, this.mode === "drop" && next !== "error" && next !== "loading" && this.purpose.textContent !== "");
+    show(this.facts, next !== "error" && next !== "loading");
     this.main.classList.remove("fade-in");
     void this.main.offsetWidth;
     this.main.classList.add("fade-in");
