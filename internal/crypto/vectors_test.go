@@ -150,7 +150,7 @@ func generate(t *testing.T) vectors {
 			e.Retention = "until:2027-03-04T05:06:07Z"
 			return e
 		}()},
-		{"reveal text", revealEnvelope("postgres://app:s3cret@db.internal:5432/app")},
+		{"reveal text", revealEnvelope("postgres://app:s3cret@db.staging.example:5432/app")},
 		{"reveal empty secret", revealEnvelope("")},
 	}
 	for i, c := range envs {

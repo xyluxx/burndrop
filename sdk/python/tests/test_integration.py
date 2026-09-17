@@ -168,7 +168,7 @@ def test_long_poll_wakes_when_the_human_submits(relay: Relay, agent: Agent) -> N
 
 
 def test_reveal_flow_is_one_time(relay: Relay, agent: Agent) -> None:
-    value = b"postgres://app:s3cret@db.internal:5432/app\x00\x01"
+    value = b"postgres://app:s3cret@db.staging.example:5432/app\x00\x01"
     sent = agent.send_secret("staging-db-url", value, ttl=600, keeps_copy=False)
     assert sent.link in sent.message
     assert "deleted my copy" in sent.message

@@ -62,7 +62,7 @@ if (result.status === "received") {
 ### Agent: hand a secret to a human
 
 ```ts
-const sent = await agent.sendSecret("staging-db-url", "postgres://app:s3cret@db.internal:5432/app", {
+const sent = await agent.sendSecret("staging-db-url", "postgres://app:s3cret@db.staging.example:5432/app", {
   ttlSeconds: 600,
   keepsCopy: false, // tell the human the truth about your own copy
 });

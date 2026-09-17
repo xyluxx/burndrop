@@ -138,7 +138,7 @@ var (
 		{"drop binary", "tls-cert", "", "", "until:2027-01-02T03:04:05Z", []byte{0x00, 0xff, 0x10, 0x80, 0x7f, 0x01, 0xfe}},
 	}
 	revealInputs = []revealInput{
-		{"reveal text", "staging-db-url", true, []byte("postgres://app:s3cret@db.internal:5432/app")},
+		{"reveal text", "staging-db-url", true, []byte("postgres://app:s3cret@db.staging.example:5432/app")},
 		{"reveal binary no copy", "session-key", false, []byte{0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd}},
 		{"reveal empty secret", "empty", true, []byte{}},
 	}

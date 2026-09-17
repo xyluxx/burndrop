@@ -114,7 +114,7 @@ async function build(): Promise<Record<string, unknown>> {
       ),
     ],
     reveals: [
-      await revealCase("reveal text", "staging-db-url", true, utf8.encode("postgres://app:s3cret@db.internal:5432/app")),
+      await revealCase("reveal text", "staging-db-url", true, utf8.encode("postgres://app:s3cret@db.staging.example:5432/app")),
       await revealCase("reveal binary no copy", "tls-key", false, new Uint8Array(86).map((_, i) => i * 3)),
       await revealCase("reveal empty secret", "staging-db-url", true, new Uint8Array(0)),
     ],

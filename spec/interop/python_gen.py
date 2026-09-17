@@ -111,7 +111,7 @@ def build() -> dict[str, Any]:
                 "reveal text",
                 "staging-db-url",
                 True,
-                b"postgres://app:s3cret@db.internal:5432/app",
+                b"postgres://app:s3cret@db.staging.example:5432/app",
             ),
             reveal_case("reveal binary no copy", "tls-key", False, bytes(range(0, 256, 3))),
             reveal_case("reveal empty secret", "staging-db-url", True, b""),

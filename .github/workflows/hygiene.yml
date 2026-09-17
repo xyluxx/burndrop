@@ -77,7 +77,8 @@ jobs:
         run: |
           set -euo pipefail
           # Real looking hostnames must be RFC 2606 example domains or the project's own.
-          if git grep -I -n -E '\b[a-z0-9-]+\.(corp|internal|local|lan)\b' -- ':!docs/backends/vault.md' ':!*.lock' ':!*lock.json'; then
+          # chrome.storage.local and browser.storage.local are extension APIs, not hosts.
+          if git grep -I -n -E '\b[a-z0-9-]+\.(corp|internal|local|lan)\b' -- ':!docs/backends/vault.md' ':!*.lock' ':!*lock.json' | grep -v -E '(chrome|browser)\.storage\.local'; then
             echo "::error::Internal hostnames are not allowed in the tree."
             exit 1
           fi

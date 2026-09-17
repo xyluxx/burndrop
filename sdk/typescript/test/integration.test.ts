@@ -166,14 +166,14 @@ describe.skipIf(goBin === undefined)("integration with the Go relay", () => {
 
   it("runs the reveal flow once and only once", async () => {
     const agent = newAgent();
-    const sent = await agent.sendSecret("staging-db-url", "postgres://app:s3cret@db.internal:5432/app", { ttlSeconds: 600, keepsCopy: false });
+    const sent = await agent.sendSecret("staging-db-url", "postgres://app:s3cret@db.staging.example:5432/app", { ttlSeconds: 600, keepsCopy: false });
     expect(sent.message).toContain("I have deleted my copy of it.");
     const notYet = await agent.client.waitForOpen(sent.requestId, Date.now() + 1000).catch((e: unknown) => e);
     expect(notYet).toBeInstanceOf(DeadlineExceededError);
     const poll = agent.client.waitForOpen(sent.requestId, Date.now() + 15_000);
     await sleep(200);
     const opened = await human.open(sent.link);
-    expect(text(opened.value)).toBe("postgres://app:s3cret@db.internal:5432/app");
+    expect(text(opened.value)).toBe("postgres://app:s3cret@db.staging.example:5432/app");
     expect(opened.keepsCopy).toBe(false);
     const status = await poll;
     expect(status.state).toBe("opened");

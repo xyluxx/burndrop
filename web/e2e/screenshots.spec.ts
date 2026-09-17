@@ -49,7 +49,7 @@ for (const theme of ["light", "dark"] as const) {
 
   test(`reveal states (${theme})`, async ({ page, baseURL }) => {
     await page.emulateMedia({ colorScheme: theme });
-    const reveal = await createReveal(baseURL!, "staging-db-url", false, "postgres://app:s3cret@db.internal:5432/app");
+    const reveal = await createReveal(baseURL!, "staging-db-url", false, "postgres://app:s3cret@db.staging.example:5432/app");
     await visit(page, reveal.link);
     await expect(main(page)).toHaveAttribute("data-state", "ready");
     await shot(page, `reveal-ready-${theme}`);

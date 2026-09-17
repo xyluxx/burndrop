@@ -216,7 +216,7 @@ test.describe("drop page", () => {
 test.describe("reveal page", () => {
   test("reveals once, and only after a click", async ({ page, baseURL, context, browserName }) => {
     const base = baseURL!;
-    const reveal = await createReveal(base, "staging-db-url", true, "postgres://app:s3cret@db.internal:5432/app");
+    const reveal = await createReveal(base, "staging-db-url", true, "postgres://app:s3cret@db.staging.example:5432/app");
     const seen = watch(page);
     await visit(page, reveal.link);
     await expect(main(page)).toHaveAttribute("data-state", "ready");

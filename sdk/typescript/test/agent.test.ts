@@ -301,7 +301,7 @@ describe("sendSecret", () => {
     const { fake, agent } = setup();
     await expect(agent.sendSecret("bad name", "v")).rejects.toBeInstanceOf(ValidationError);
     await expect(agent.sendSecret("n", "v", { ttlSeconds: 0 })).rejects.toBeInstanceOf(ValidationError);
-    const out = await agent.sendSecret("staging-db-url", "postgres://app:s3cret@db.internal:5432/app", { ttlSeconds: 600 });
+    const out = await agent.sendSecret("staging-db-url", "postgres://app:s3cret@db.staging.example:5432/app", { ttlSeconds: 600 });
     expect(out.link.startsWith(fake.origin + "/reveal#")).toBe(true);
     expect(out.keepsCopy).toBe(true);
     expect(out.revokeToken).toMatch(/^[A-Za-z0-9_-]{22}$/);
@@ -315,13 +315,13 @@ describe("sendSecret", () => {
     expect(reveal.name).toBe("staging-db-url");
     expect(reveal.keepsCopy).toBe(true);
     const opened = await human.open(out.link, { fetch: fake.fetch });
-    expect(text(opened.value)).toBe("postgres://app:s3cret@db.internal:5432/app");
+    expect(text(opened.value)).toBe("postgres://app:s3cret@db.staging.example:5432/app");
     expect(opened.format).toBe("text");
     expect(opened.keepsCopy).toBe(true);
     expect(opened.name).toBe("staging-db-url");
     expect(fake.state(out.requestId)).toBe("opened");
     await expect(human.open(out.link, { fetch: fake.fetch })).rejects.toThrow(/already used or revoked \(state: opened\)/);
-    expect(agent.redact("s3cret is postgres://app:s3cret@db.internal:5432/app")).toBe("s3cret is [redacted:staging-db-url]");
+    expect(agent.redact("s3cret is postgres://app:s3cret@db.staging.example:5432/app")).toBe("s3cret is [redacted:staging-db-url]");
   });
 
   it("tells the human when the copy was deleted and handles binary values", async () => {
