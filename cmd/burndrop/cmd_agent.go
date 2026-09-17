@@ -343,8 +343,8 @@ func (a *app) cmdAudit(_ context.Context, args []string) error {
 }
 
 func (a *app) cmdInstructions(args []string) error {
-	fs := a.flags("instructions", "[-format text|claude|cursor|agents|mcp-json]")
-	format := fs.String("format", "text", "text, claude (CLAUDE.md section), cursor (.cursor/rules file), agents (AGENTS.md section), or mcp-json (client configuration)")
+	fs := a.flags("instructions", "[-format text|claude|cursor|agents|mcp-json|vscode-mcp-json]")
+	format := fs.String("format", "text", "text, claude (CLAUDE.md section), cursor (.cursor/rules file), agents (AGENTS.md section), mcp-json (client configuration), or vscode-mcp-json (.vscode/mcp.json)")
 	if err := a.parse(fs, args); err != nil {
 		return err
 	}
@@ -361,6 +361,16 @@ func (a *app) cmdInstructions(args []string) error {
 		fmt.Fprintln(a.stdout, `{
   "mcpServers": {
     "burndrop": {
+      "command": "burndrop",
+      "args": ["mcp"]
+    }
+  }
+}`)
+	case "vscode-mcp-json":
+		fmt.Fprintln(a.stdout, `{
+  "servers": {
+    "burndrop": {
+      "type": "stdio",
       "command": "burndrop",
       "args": ["mcp"]
     }

@@ -20,10 +20,10 @@ Python SDK, `uv`. Docker is optional (Redis store tests, container image).
 ```bash
 git clone https://github.com/burndrop/burndrop.git
 cd burndrop
-make test          # Go unit tests with the race detector
+make test          # Go unit tests (make race adds the race detector and coverage)
 make web           # builds web/dist/page.html and runs the page's unit tests
 make e2e           # Playwright against a real relay (needs: cd web && npx playwright install chromium)
-make hygiene       # em dash, attribution, secrets, and pinned-actions checks
+make hygiene       # em dash, attribution, pinned actions, generated files (CI adds a gitleaks scan)
 ```
 
 `make help` lists every target. The Go relay embeds `web/dist/page.html`;
@@ -43,7 +43,7 @@ your local binary.
    tree or the history. Use `relay.example` and `drop.example.com`.
 5. GitHub Actions pinned by commit SHA. Dependencies pinned to exact versions.
 6. `gofmt`, `go vet`, and the TypeScript type check pass; tests pass with
-   `-race`; coverage does not drop.
+   `-race`; statement coverage stays above the floor in `ci.yml` (80 percent).
 
 ## What a good pull request looks like
 

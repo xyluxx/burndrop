@@ -41,6 +41,22 @@ jobs:
             exit 1
           fi
 
+      - name: Conventional commit subjects
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          bad=0
+          while IFS= read -r subject; do
+            if ! [[ "$subject" =~ ^(feat|fix|docs|test|chore|ci|build|perf|refactor|style|revert)(\([a-z0-9./-]+\))?!?:\ .+ ]]; then
+              echo "::error::Not a conventional commit subject: $subject"
+              bad=1
+            fi
+          done < <(git log --format=%s "$BASE..$HEAD")
+          exit $bad
+
       - name: No AI attribution in files or commit messages
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -95,6 +111,7 @@ jobs:
           /tmp/burndrop instructions -format claude | diff - agent-instructions/CLAUDE.md
           /tmp/burndrop instructions -format cursor | diff - agent-instructions/cursor-rules/burndrop.mdc
           /tmp/burndrop instructions -format mcp-json | diff - agent-instructions/mcp/mcp.json
+          /tmp/burndrop instructions -format vscode-mcp-json | diff - agent-instructions/mcp/vscode-mcp.json
           /tmp/burndrop instructions -format text | diff - agent-instructions/system-prompt.txt
 
   secrets:

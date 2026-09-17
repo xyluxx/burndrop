@@ -48,7 +48,7 @@ hygiene: ## Em dash, attribution, pinned actions, and generated file checks
 	@if git grep -I -n -i -E 'Co-Authored-By:.*(Claude|GPT|Copilot|Gemini|Anthropic|OpenAI)|Generated (with|by) (Claude|GPT|Copilot|Gemini|AI)' -- ':!.github/workflows/hygiene.yml' ':!Makefile' 2>/dev/null; then echo "attribution text found"; exit 1; fi
 	@bad=0; for u in $$(grep -rhoE 'uses:\s*[^ ]+@[^ ]+' .github/workflows | sed -E 's/uses:\s*//'); do ref="$${u##*@}"; [[ "$$ref" =~ ^[0-9a-f]{40}$$ ]] || { echo "unpinned action: $$u"; bad=1; }; done; exit $$bad
 	@go build -o "$${TMPDIR:-/tmp}/burndrop-hygiene" ./cmd/burndrop
-	@for f in agents:AGENTS.md claude:CLAUDE.md cursor:cursor-rules/burndrop.mdc mcp-json:mcp/mcp.json text:system-prompt.txt; do "$${TMPDIR:-/tmp}/burndrop-hygiene" instructions -format "$${f%%:*}" | diff - "agent-instructions/$${f#*:}"; done
+	@for f in agents:AGENTS.md claude:CLAUDE.md cursor:cursor-rules/burndrop.mdc mcp-json:mcp/mcp.json vscode-mcp-json:mcp/vscode-mcp.json text:system-prompt.txt; do "$${TMPDIR:-/tmp}/burndrop-hygiene" instructions -format "$${f%%:*}" | diff - "agent-instructions/$${f#*:}"; done
 	@echo "hygiene ok"
 
 instructions: ## Regenerate agent-instructions/ from the binary
@@ -56,6 +56,7 @@ instructions: ## Regenerate agent-instructions/ from the binary
 	go run ./cmd/burndrop instructions -format claude > agent-instructions/CLAUDE.md
 	go run ./cmd/burndrop instructions -format cursor > agent-instructions/cursor-rules/burndrop.mdc
 	go run ./cmd/burndrop instructions -format mcp-json > agent-instructions/mcp/mcp.json
+	go run ./cmd/burndrop instructions -format vscode-mcp-json > agent-instructions/mcp/vscode-mcp.json
 	go run ./cmd/burndrop instructions -format text > agent-instructions/system-prompt.txt
 
 coverage: race ## HTML coverage report at coverage.html

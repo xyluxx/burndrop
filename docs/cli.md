@@ -193,7 +193,7 @@ Runs one check per line, `ok    <check>  <detail>` or `FAIL  <check>  <error>`: 
 ### instructions
 
 ```
-burndrop instructions [-format text|claude|cursor|agents|mcp-json]
+burndrop instructions [-format text|claude|cursor|agents|mcp-json|vscode-mcp-json]
 ```
 
 Prints the instruction text the MCP server sends to clients (`text`, the default), the same text under a `## Secrets: use burndrop` heading (`claude`, `agents`), a Cursor rule file with front matter (`cursor`), or the MCP client configuration `{"mcpServers":{"burndrop":{"command":"burndrop","args":["mcp"]}}}` (`mcp-json`). An unknown format exits 2.

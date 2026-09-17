@@ -39,6 +39,8 @@ jobs:
         run: |
           go test -race -count=1 -coverprofile=coverage.out $(go list ./... | grep -v /node_modules/)
           go tool cover -func=coverage.out | tail -1 | tee -a "$GITHUB_STEP_SUMMARY"
+          total=$(go tool cover -func=coverage.out | tail -1 | awk '{print $NF}' | tr -d '%')
+          awk -v t="$total" 'BEGIN { if (t + 0 < 80) { print "::error::statement coverage " t "% is below the 80% floor"; exit 1 } }'
       - name: Tests
         if: runner.os != 'Linux'
         shell: bash
