@@ -33,7 +33,7 @@ services:
     environment:
       BURNDROP_LISTEN: "127.0.0.1:8080"
       BURNDROP_PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN to https://<TS_HOSTNAME>.<tailnet>.ts.net}"
-      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:?run docker compose run --rm relay keygen}"
+      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:-}"
       BURNDROP_TRUSTED_PROXIES: "127.0.0.1/32,::1/128"
       BURNDROP_LOG_FORMAT: json
 

@@ -20,7 +20,7 @@ services:
     environment:
       BURNDROP_LISTEN: ":8080"
       BURNDROP_PUBLIC_ORIGIN: "https://${DOMAIN:?set DOMAIN in .env}"
-      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:?run docker compose run --rm relay keygen and put the id:sha256:... line in .env}"
+      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:-}"
       BURNDROP_TRUSTED_PROXIES: "${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}"
       BURNDROP_STORE: "${STORE:-memory}"
       BURNDROP_REDIS_URL: "${REDIS_URL:-}"
