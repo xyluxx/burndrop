@@ -299,7 +299,7 @@ sequenceDiagram
     participant H as Human (chat)
     participant B as Browser
     M->>A: request_secret(name, purpose, retention)
-    A->>A: keypair (pk, sk); commitment = SHA-256(pk)
+    A->>A: keypair (pk, sk), commitment = SHA-256(pk)
     A->>R: POST /drops {ttl, commitment} (bearer key)
     R-->>A: drop_id, upload_token, fetch_token, expires_at
     A-->>M: link, fingerprint, expires_at, message text
