@@ -27,14 +27,18 @@ export default defineConfig({
     timeout: 30_000,
   },
   projects: [
-    { name: "desktop-light", use: { ...devices["Desktop Chrome"], colorScheme: "light" } },
-    { name: "desktop-dark", use: { ...devices["Desktop Chrome"], colorScheme: "dark" } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    { name: "desktop-light", testIgnore: /screenshots\.spec\.ts/, use: { ...devices["Desktop Chrome"], colorScheme: "light" } },
+    { name: "desktop-dark", testIgnore: /screenshots\.spec\.ts/, use: { ...devices["Desktop Chrome"], colorScheme: "dark" } },
+    { name: "mobile", testIgnore: /screenshots\.spec\.ts/, use: { ...devices["Pixel 7"] } },
     ...(allBrowsers
       ? [
-          { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-          { name: "webkit", use: { ...devices["Desktop Safari"] } },
+          { name: "firefox", testIgnore: /screenshots\.spec\.ts/, use: { ...devices["Desktop Firefox"] } },
+          { name: "webkit", testIgnore: /screenshots\.spec\.ts/, use: { ...devices["Desktop Safari"] } },
         ]
+      : []),
+    // README material, produced on demand: BURNDROP_SCREENSHOTS=1 npx playwright test --project=screenshots
+    ...(process.env["BURNDROP_SCREENSHOTS"] === "1"
+      ? [{ name: "screenshots", testMatch: /screenshots\.spec\.ts/, use: { ...devices["Desktop Chrome"], viewport: { width: 600, height: 700 }, deviceScaleFactor: 2, video: { mode: "on", size: { width: 600, height: 700 } } } }]
       : []),
   ],
 });

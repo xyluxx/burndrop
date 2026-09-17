@@ -93,4 +93,6 @@ STORE=redis REDIS_URL=redis://valkey:6379/0 docker compose --profile redis up -d
 - To serve the page from a different origin than the API (so that a relay
   compromise cannot also alter the page), host `web/dist/page.html` on any
   static host and set `BURNDROP_PAGE_ORIGINS` to that origin. Agents then
-  pass `-page-origin` to `burndrop init`.
+  pass `-page-origin` to `burndrop init`. `burndrop verify-page` checks
+  the copy the relay serves, so in this layout verify the static host's copy
+  with `sha256sum` against the hash in the release notes instead.

@@ -9,7 +9,7 @@ VERSION ?= dev
 GO_PKGS := $(shell go list ./... 2>/dev/null | grep -v /node_modules/)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: help build web e2e test race lint typecheck hygiene instructions coverage docker sdk-python sdk-typescript extension interop clean
+.PHONY: help build web e2e screenshots test race lint typecheck hygiene instructions coverage docker sdk-python sdk-typescript extension interop clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-16s %s\n", $$1, $$2}'
@@ -23,6 +23,11 @@ web: ## Build the drop page (web/dist) and run its unit tests
 
 e2e: ## Playwright suite against a real relay (needs: cd web && npx playwright install chromium)
 	cd web && node e2e/build-relay.mjs && npx playwright test
+
+screenshots: ## Regenerate docs/screenshots from the real page (needs ffmpeg and the Playwright browser)
+	cd web && node e2e/build-relay.mjs && BURNDROP_SCREENSHOTS=1 npx playwright test --project=screenshots
+	ffmpeg -y -loglevel error -i docs/screenshots/demo.webm -vf "fps=12,scale=600:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 docs/screenshots/demo.gif
+	rm -f docs/screenshots/demo.webm
 
 test: ## Go unit tests
 	go test -count=1 $(GO_PKGS)
