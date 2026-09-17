@@ -6,16 +6,22 @@
 <p align="center"><strong>One-time, end-to-end encrypted secret exchange between humans and AI agents, through a relay that only ever sees ciphertext.</strong></p>
 
 <p align="center">
+  <a href="https://pkg.go.dev/github.com/xyluxx/burndrop"><img alt="Go Reference" src="https://pkg.go.dev/badge/github.com/xyluxx/burndrop.svg"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/xyluxx/burndrop"></a>
+</p>
+
+<!--
+Badges to restore once each becomes true (they render as errors until then):
+  after GitHub Actions runs on this repository (CI, CodeQL, OpenSSF Scorecard):
   <a href="https://github.com/xyluxx/burndrop/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/xyluxx/burndrop/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/xyluxx/burndrop/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/xyluxx/burndrop/actions/workflows/codeql.yml/badge.svg"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/xyluxx/burndrop"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/xyluxx/burndrop/badge"></a>
-  <a href="https://goreportcard.com/report/github.com/xyluxx/burndrop"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/xyluxx/burndrop"></a>
-  <a href="https://pkg.go.dev/github.com/xyluxx/burndrop"><img alt="Go Reference" src="https://pkg.go.dev/badge/github.com/xyluxx/burndrop.svg"></a>
+  after the first release:
   <a href="https://github.com/xyluxx/burndrop/releases"><img alt="Release" src="https://img.shields.io/github/v/release/xyluxx/burndrop?display_name=tag"></a>
+  after publishing to npm and PyPI:
   <a href="https://www.npmjs.com/package/burndrop"><img alt="npm" src="https://img.shields.io/npm/v/burndrop"></a>
   <a href="https://pypi.org/project/burndrop/"><img alt="PyPI" src="https://img.shields.io/pypi/v/burndrop"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/xyluxx/burndrop"></a>
-</p>
+-->
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> ·
