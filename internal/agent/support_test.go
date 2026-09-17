@@ -285,17 +285,44 @@ func TestConfig(t *testing.T) {
 	if b, err := OpenBackend(c, paths, getenv); err != nil || b.Name() != "agevault" {
 		t.Fatalf("agevault passphrase: %v", err)
 	}
-	c = Config{Relay: "https://r.example", Storage: "onepassword"}
+	// Every external manager constructs without touching the network or a CLI.
+	for _, name := range []string{"onepassword", "bitwarden", "vault", "infisical", "doppler", "aws", "gcp", "azure"} {
+		c := Config{Relay: "https://r.example", Storage: name}
+		c.Backends.Azure.VaultName = "kv"
+		b, err := OpenBackend(c, paths, getenv)
+		if err != nil || b.Name() != name {
+			t.Fatalf("%s: %v", name, err)
+		}
+	}
+	c = Config{Relay: "https://r.example", Storage: "bitwarden"}
+	c.Backends.Bitwarden.SessionEnv = "BW_SESSION_TEST"
+	if _, err := OpenBackend(c, paths, getenv); err == nil {
+		t.Fatal("empty bitwarden session variable must fail")
+	}
+	env["BW_SESSION_TEST"] = "sess"
+	if b, err := OpenBackend(c, paths, getenv); err != nil || b.Name() != "bitwarden" {
+		t.Fatalf("bitwarden with session: %v", err)
+	}
+	c = Config{Relay: "https://r.example", Storage: "vault"}
+	c.Backends.Vault.TokenEnv = "VAULT_TOKEN_TEST"
+	if _, err := OpenBackend(c, paths, getenv); err == nil {
+		t.Fatal("empty vault token variable must fail")
+	}
+	env["VAULT_TOKEN_TEST"] = "tok"
+	if b, err := OpenBackend(c, paths, getenv); err != nil || b.Name() != "vault" {
+		t.Fatalf("vault with token: %v", err)
+	}
+	c = Config{Relay: "https://r.example", Storage: "custom"}
 	if _, err := OpenBackend(c, paths, getenv); err == nil {
 		t.Fatal("unregistered backend must fail clearly")
 	}
-	RegisterBackend("onepassword", func(Config, Paths, func(string) string) (storage.Backend, error) {
+	RegisterBackend("custom", func(Config, Paths, func(string) string) (storage.Backend, error) {
 		return nil, errors.New("registered")
 	})
 	if _, err := OpenBackend(c, paths, getenv); err == nil || err.Error() != "registered" {
 		t.Fatalf("registered backend: %v", err)
 	}
-	delete(externalBackends, "onepassword")
+	delete(externalBackends, "custom")
 }
 
 func TestMessages(t *testing.T) {

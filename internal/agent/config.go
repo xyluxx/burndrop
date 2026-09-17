@@ -72,11 +72,14 @@ type DotenvConfig struct {
 }
 
 type OnePasswordConfig struct {
-	Vault string `toml:"vault,omitempty"`
+	Vault   string `toml:"vault,omitempty"`
+	Account string `toml:"account,omitempty"`
 }
 
 type BitwardenConfig struct {
-	Folder string `toml:"folder,omitempty"`
+	// SessionEnv names the variable holding the "bw unlock --raw" session
+	// key. Empty lets bw read BW_SESSION from its own environment.
+	SessionEnv string `toml:"session_env,omitempty"`
 }
 
 type VaultConfig struct {
@@ -112,6 +115,8 @@ type GCPConfig struct {
 type AzureConfig struct {
 	VaultName string `toml:"vault_name,omitempty"`
 	Prefix    string `toml:"prefix,omitempty"`
+	// Purge removes soft-deleted secrets right away so a name can be reused.
+	Purge bool `toml:"purge,omitempty"`
 }
 
 // Defaults.
@@ -312,14 +317,45 @@ func (c *Config) ResolveAgentKey(getenv func(string) string, keychain func(servi
 // BackendOpener builds a storage backend from configuration.
 type BackendOpener func(cfg Config, paths Paths, getenv func(string) string) (storage.Backend, error)
 
-// OpenBackend constructs the configured backend. External managers are
-// registered by the backends package through RegisterBackend so this file
-// stays free of vendor details.
+// OpenBackend constructs the configured backend. Construction never talks
+// to the manager; Probe does that. Names not built in can be added through
+// RegisterBackend.
 func OpenBackend(cfg Config, paths Paths, getenv func(string) string) (storage.Backend, error) {
 	if getenv == nil {
 		getenv = os.Getenv
 	}
+	b := cfg.Backends
 	switch cfg.Storage {
+	case "onepassword":
+		return storage.NewOnePassword(storage.OnePasswordOptions{Vault: b.OnePassword.Vault, Account: b.OnePassword.Account}), nil
+	case "bitwarden":
+		opts := storage.BitwardenOptions{}
+		if env := b.Bitwarden.SessionEnv; env != "" {
+			opts.Session = getenv(env)
+			if opts.Session == "" {
+				return nil, fmt.Errorf("bitwarden session variable %s is empty", env)
+			}
+		}
+		return storage.NewBitwarden(opts), nil
+	case "vault":
+		opts := storage.Vault{Address: b.Vault.Address, Namespace: b.Vault.Namespace, Mount: b.Vault.Mount, Path: b.Vault.Path}
+		if env := b.Vault.TokenEnv; env != "" {
+			opts.Token = getenv(env)
+			if opts.Token == "" {
+				return nil, fmt.Errorf("vault token variable %s is empty", env)
+			}
+		}
+		return storage.NewVault(opts), nil
+	case "infisical":
+		return storage.NewInfisical(storage.InfisicalOptions{ProjectID: b.Infisical.ProjectID, Environment: b.Infisical.Environment, Path: b.Infisical.Path}), nil
+	case "doppler":
+		return storage.NewDoppler(storage.DopplerOptions{Project: b.Doppler.Project, Config: b.Doppler.Config}), nil
+	case "aws":
+		return storage.NewAWS(storage.AWS{Region: b.AWS.Region, Profile: b.AWS.Profile, Prefix: b.AWS.Prefix}), nil
+	case "gcp":
+		return storage.NewGCP(storage.GCP{Project: b.GCP.Project, Prefix: b.GCP.Prefix}), nil
+	case "azure":
+		return storage.NewAzure(storage.Azure{VaultName: b.Azure.VaultName, Prefix: b.Azure.Prefix, Purge: b.Azure.Purge}), nil
 	case "memory":
 		return storage.NewMemory(), nil
 	case "keychain":
