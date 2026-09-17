@@ -6,6 +6,8 @@ package client
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -355,7 +357,8 @@ func (c *Client) PageHash(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return crypto.Commitment(body), nil
+	sum := sha256.Sum256(body)
+	return hex.EncodeToString(sum[:]), nil
 }
 
 const maxResponse = 1 << 20

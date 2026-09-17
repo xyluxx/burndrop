@@ -17,7 +17,7 @@ import (
 func (a *app) cmdVerifyPage(ctx context.Context, args []string) error {
 	fs := a.flags("verify-page", "[-relay URL] [-expect SHA256]")
 	relay := fs.String("relay", "", "relay origin (default from config)")
-	expect := fs.String("expect", "", "expected base64url SHA-256 of the page, from the release notes")
+	expect := fs.String("expect", "", "expected hex SHA-256 of the page, from the release notes or page.sha256")
 	if err := a.parse(fs, args); err != nil {
 		return err
 	}

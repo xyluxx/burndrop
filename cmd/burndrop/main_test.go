@@ -365,7 +365,7 @@ func TestAgentCommands(t *testing.T) {
 func TestVerifyPageWithServedPage(t *testing.T) {
 	c := newCLI(t)
 	page := []byte("<!doctype html><title>burndrop</title>")
-	hash := crypto.Commitment(page)
+	hash := hexSHA256(page)
 	cfg := relay.DefaultConfig()
 	cfg.PublicOrigin = "http://127.0.0.1"
 	cfg.AgentAuth = "off"
