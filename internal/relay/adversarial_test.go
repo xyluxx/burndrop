@@ -193,7 +193,7 @@ func TestTamperedCiphertextIsRejectedByClients(t *testing.T) {
 	bad[len(bad)-1] ^= 0x01
 	r := ts.createReveal(bad, 0)
 	res = ts.open(r)
-	if _, err := crypto.DecryptEnvelope(key, decodeB64(t, res.str("ciphertext")), crypto.RevealAAD("MTIzNDU2Nzg5MGFiY2RlZg", "staging-db-url", false)); err == nil {
+	if _, err := crypto.DecryptEnvelope(key, decodeB64(t, res.str("ciphertext")), crypto.RevealAAD("staging-db-url", false)); err == nil {
 		t.Fatal("browser accepted tampered ciphertext")
 	}
 }

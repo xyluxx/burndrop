@@ -41,10 +41,10 @@ type expiryEntry struct {
 
 type expiryHeap []expiryEntry
 
-func (h expiryHeap) Len() int            { return len(h) }
-func (h expiryHeap) Less(i, j int) bool  { return h[i].at.Before(h[j].at) }
-func (h expiryHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
-func (h *expiryHeap) Push(x any)         { *h = append(*h, x.(expiryEntry)) }
+func (h expiryHeap) Len() int           { return len(h) }
+func (h expiryHeap) Less(i, j int) bool { return h[i].at.Before(h[j].at) }
+func (h expiryHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *expiryHeap) Push(x any)        { *h = append(*h, x.(expiryEntry)) }
 func (h *expiryHeap) Pop() any {
 	old := *h
 	n := len(old)

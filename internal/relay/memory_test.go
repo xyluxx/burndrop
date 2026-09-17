@@ -22,190 +22,30 @@ func newDrop(kind Kind, now time.Time, ttl time.Duration) (*Drop, string, string
 	return d, a, b
 }
 
-func TestMemoryStoreLifecycle(t *testing.T) {
-	clock := &fakeClock{t: time.Unix(1_800_000_000, 0)}
-	m := NewMemory(StoreOptions{MaxLive: 2, MaxBytes: 100, TombstoneGrace: time.Hour, Now: clock.Now})
-	ctx := context.Background()
-	d, up, fetch := newDrop(KindDrop, clock.Now(), time.Minute)
-	if err := m.Create(ctx, d); err != nil {
-		t.Fatal(err)
-	}
-	if err := m.Create(ctx, d); !errors.Is(err, ErrFull) {
-		t.Fatalf("duplicate id: %v", err)
-	}
-	if _, _, err := m.Fetch(ctx, d.ID, crypto.HashToken(fetch)); !IsState(err, StateCreated) {
-		t.Fatalf("fetch before upload: %v", err)
-	}
-	if err := m.Upload(ctx, d.ID, crypto.HashToken(fetch), "c", []byte("ct")); !errors.Is(err, ErrBadToken) {
-		t.Fatalf("upload with fetch token: %v", err)
-	}
-	if err := m.Upload(ctx, d.ID, crypto.HashToken(up), "wrong", []byte("ct")); !errors.Is(err, ErrCommitment) {
-		t.Fatalf("commitment: %v", err)
-	}
-	if err := m.Upload(ctx, d.ID, crypto.HashToken(up), "c", make([]byte, 101)); !errors.Is(err, ErrFull) {
-		t.Fatalf("byte cap on upload: %v", err)
-	}
-	if err := m.Upload(ctx, d.ID, crypto.HashToken(up), "c", []byte("ct")); err != nil {
-		t.Fatal(err)
-	}
-	if err := m.Upload(ctx, d.ID, crypto.HashToken(up), "c", []byte("ct")); !IsState(err, StateUploaded) {
-		t.Fatalf("second upload: %v", err)
-	}
-	if st := m.Stats(); st.Live != 1 || st.Bytes != 2 || st.Total != 1 {
-		t.Fatalf("stats: %+v", st)
-	}
-	ct, at, err := m.Fetch(ctx, d.ID, crypto.HashToken(fetch))
-	if err != nil || string(ct) != "ct" || !at.Equal(clock.Now()) {
-		t.Fatalf("fetch: %v %q", err, ct)
-	}
-	if _, _, err := m.Fetch(ctx, d.ID, crypto.HashToken(fetch)); !IsState(err, StateFetched) {
-		t.Fatalf("second fetch: %v", err)
-	}
-	if err := m.Revoke(ctx, d.ID, crypto.HashToken(fetch)); !IsState(err, StateFetched) {
-		t.Fatalf("revoke after fetch: %v", err)
-	}
-	st, err := m.Status(ctx, d.ID)
-	if err != nil || st.State != StateFetched || st.FetchedAt.IsZero() || st.UploadedAt.IsZero() {
-		t.Fatalf("status: %v %+v", err, st)
-	}
-	// Reveals and wrong kinds.
-	r, reveal, revoke := newDrop(KindReveal, clock.Now(), time.Minute)
-	if err := m.Create(ctx, r); err != nil {
-		t.Fatal(err)
-	}
-	if err := m.Upload(ctx, r.ID, crypto.HashToken(reveal), "c", []byte("x")); !errors.Is(err, ErrWrongKind) {
-		t.Fatalf("upload to reveal: %v", err)
-	}
-	if _, _, err := m.Fetch(ctx, r.ID, crypto.HashToken(reveal)); !errors.Is(err, ErrWrongKind) {
-		t.Fatalf("fetch reveal: %v", err)
-	}
-	if _, _, err := m.Open(ctx, d.ID, crypto.HashToken(reveal)); !errors.Is(err, ErrWrongKind) {
-		t.Fatalf("open drop: %v", err)
-	}
-	if _, _, err := m.Open(ctx, r.ID, crypto.HashToken(revoke)); !errors.Is(err, ErrBadToken) {
-		t.Fatalf("open with revoke token: %v", err)
-	}
-	if err := m.Revoke(ctx, r.ID, crypto.HashToken(revoke)); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, err := m.Open(ctx, r.ID, crypto.HashToken(reveal)); !IsState(err, StateRevoked) {
-		t.Fatalf("open after revoke: %v", err)
-	}
-	if _, err := m.Status(ctx, "missing"); !errors.Is(err, ErrNotFound) {
-		t.Fatal("missing id")
-	}
-	// Capacity: two tombstones do not count as live.
-	for i := 0; i < 2; i++ {
-		x, _, _ := newDrop(KindDrop, clock.Now(), time.Minute)
-		if err := m.Create(ctx, x); err != nil {
-			t.Fatalf("create %d: %v", i, err)
+// TestMemoryStore runs the shared store suite and then checks what only the
+// memory store promises: no leaked waiters, and Close discards everything.
+func TestMemoryStore(t *testing.T) {
+	var stores []*Memory
+	runStoreSuite(t, func(t *testing.T, opts StoreOptions) Store {
+		m := NewMemory(opts)
+		stores = append(stores, m)
+		return m
+	})
+	for _, m := range stores {
+		m.mu.Lock()
+		n := len(m.waiters)
+		m.mu.Unlock()
+		if n != 0 {
+			t.Fatal("waiters leaked")
 		}
 	}
-	x, _, _ := newDrop(KindDrop, clock.Now(), time.Minute)
-	if err := m.Create(ctx, x); !errors.Is(err, ErrFull) {
-		t.Fatalf("live cap: %v", err)
+	m := NewMemory(StoreOptions{})
+	d, _, _ := newDrop(KindReveal, time.Now(), time.Minute)
+	if err := m.Create(context.Background(), d); err != nil {
+		t.Fatal(err)
 	}
-	// Close zeroes and empties.
 	if err := m.Close(); err != nil || m.Stats().Total != 0 {
-		t.Fatal("close")
-	}
-}
-
-func TestMemoryStoreExpiryAndSweep(t *testing.T) {
-	clock := &fakeClock{t: time.Unix(1_800_000_000, 0)}
-	m := NewMemory(StoreOptions{TombstoneGrace: time.Hour, Now: clock.Now})
-	ctx := context.Background()
-	d, up, _ := newDrop(KindDrop, clock.Now(), time.Minute)
-	_ = m.Create(ctx, d)
-	_ = m.Upload(ctx, d.ID, crypto.HashToken(up), "c", []byte("ciphertext"))
-	r, _, _ := newDrop(KindReveal, clock.Now(), 2*time.Minute)
-	_ = m.Create(ctx, r)
-	if n := m.Sweep(); n != 0 {
-		t.Fatalf("premature sweep: %d", n)
-	}
-	clock.Advance(time.Minute)
-	if n := m.Sweep(); n != 1 {
-		t.Fatalf("sweep at expiry: %d", n)
-	}
-	if st := m.Stats(); st.Live != 1 || st.Bytes != int64(len("reveal-ciphertext")) || st.Total != 2 {
-		t.Fatalf("after first expiry: %+v", st)
-	}
-	st, _ := m.Status(ctx, d.ID)
-	if st.State != StateExpired {
-		t.Fatal("not expired")
-	}
-	// Lazy expiry without a sweep.
-	clock.Advance(time.Minute)
-	st, _ = m.Status(ctx, r.ID)
-	if st.State != StateExpired {
-		t.Fatal("lazy expiry failed")
-	}
-	if st := m.Stats(); st.Live != 0 || st.Bytes != 0 {
-		t.Fatalf("lazy expiry did not free: %+v", st)
-	}
-	// Tombstones removed after the grace period, oldest first: the drop
-	// expired at one minute, the reveal at two, so at 61 minutes only the
-	// drop's tombstone is due.
-	clock.Advance(59 * time.Minute)
-	if n := m.Sweep(); n != 1 {
-		t.Fatalf("grace sweep: %d", n)
-	}
-	clock.Advance(time.Minute)
-	if n := m.Sweep(); n != 1 {
-		t.Fatalf("second grace sweep: %d", n)
-	}
-	if m.Stats().Total != 0 {
-		t.Fatal("tombstones remain")
-	}
-}
-
-func TestMemoryStoreWait(t *testing.T) {
-	clock := &fakeClock{t: time.Unix(1_800_000_000, 0)}
-	m := NewMemory(StoreOptions{Now: clock.Now})
-	ctx := context.Background()
-	d, up, _ := newDrop(KindDrop, clock.Now(), time.Minute)
-	_ = m.Create(ctx, d)
-	// Immediate return when the state already differs.
-	if st, err := m.Wait(ctx, d.ID, StateUploaded, time.Second); err != nil || st.State != StateCreated {
-		t.Fatalf("immediate: %v %+v", err, st)
-	}
-	// Zero timeout never blocks.
-	if st, _ := m.Wait(ctx, d.ID, StateCreated, 0); st.State != StateCreated {
-		t.Fatal("zero timeout")
-	}
-	// Wakes on change.
-	done := make(chan Status, 1)
-	go func() {
-		st, _ := m.Wait(ctx, d.ID, StateCreated, 5*time.Second)
-		done <- st
-	}()
-	time.Sleep(50 * time.Millisecond)
-	_ = m.Upload(ctx, d.ID, crypto.HashToken(up), "c", []byte("x"))
-	select {
-	case st := <-done:
-		if st.State != StateUploaded {
-			t.Fatalf("woke with %s", st.State)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("wait did not wake")
-	}
-	// Context cancellation returns promptly with the current state.
-	cctx, cancel := context.WithCancel(ctx)
-	go func() { time.Sleep(50 * time.Millisecond); cancel() }()
-	start := time.Now()
-	if st, err := m.Wait(cctx, d.ID, StateUploaded, 5*time.Second); err != nil || st.State != StateUploaded || time.Since(start) > time.Second {
-		t.Fatalf("cancel: %v %+v", err, st)
-	}
-	// Expiry wakes waiters too.
-	go func() { time.Sleep(50 * time.Millisecond); clock.Advance(2 * time.Minute); m.Sweep() }()
-	if st, _ := m.Wait(ctx, d.ID, StateUploaded, 5*time.Second); st.State != StateExpired {
-		t.Fatalf("expiry wake: %s", st.State)
-	}
-	if _, err := m.Wait(ctx, "missing", StateCreated, time.Second); !errors.Is(err, ErrNotFound) {
-		t.Fatal("missing id")
-	}
-	if len(m.waiters) != 0 {
-		t.Fatal("waiters leaked")
+		t.Fatal("close must zero and empty the store")
 	}
 }
 

@@ -76,7 +76,7 @@ func TestRevealFlow(t *testing.T) {
 	if res.Status != 200 || res.str("created_at") == "" {
 		t.Fatalf("open: %d %s", res.Status, res.Raw)
 	}
-	env, err := crypto.DecryptEnvelope(key, decodeB64(t, res.str("ciphertext")), crypto.RevealAAD("MTIzNDU2Nzg5MGFiY2RlZg", "staging-db-url", false))
+	env, err := crypto.DecryptEnvelope(key, decodeB64(t, res.str("ciphertext")), crypto.RevealAAD("staging-db-url", false))
 	if err != nil || env.Secret != "postgres://app:pw@db/app" {
 		t.Fatalf("browser could not decrypt: %v", err)
 	}

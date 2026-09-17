@@ -34,12 +34,14 @@ func (c *fakeClock) Advance(d time.Duration) {
 	c.t = c.t.Add(d)
 }
 
-// testServer is a relay under test with an in-memory store, a fake clock, a
-// captured log, and one configured agent key.
+// testServer is a relay under test with a store (memory unless
+// newTestServerWith was given another), a fake clock, a captured log, and
+// one configured agent key.
 type testServer struct {
 	t        *testing.T
 	srv      *Server
-	store    *Memory
+	store    *Memory // nil when the store is not the memory store
+	slots    Store   // the store wired into srv, whatever its kind
 	cfg      Config
 	clock    *fakeClock
 	logs     *bytes.Buffer
@@ -68,6 +70,13 @@ func testPage() *web.Page {
 
 func newTestServer(t *testing.T, mutate func(*Config)) *testServer {
 	t.Helper()
+	return newTestServerWith(t, mutate, nil)
+}
+
+// newTestServerWith is newTestServer on a store from newStore; nil selects
+// the memory store.
+func newTestServerWith(t *testing.T, mutate func(*Config), newStore func(*testing.T, StoreOptions) Store) *testServer {
+	t.Helper()
 	key, err := crypto.RandomAgentKey()
 	if err != nil {
 		t.Fatal(err)
@@ -87,11 +96,18 @@ func newTestServer(t *testing.T, mutate func(*Config)) *testServer {
 	logs := &bytes.Buffer{}
 	mu := &sync.Mutex{}
 	logger := slog.New(slog.NewJSONHandler(syncWriter{mu: mu, w: logs}, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	store := NewMemory(StoreOptions{MaxLive: cfg.MaxLiveDrops, MaxBytes: cfg.MaxTotalBytes, Now: clock.Now})
-	srv := New(cfg, store, Options{Page: testPage(), Version: "test", Now: clock.Now, Logger: logger})
+	opts := StoreOptions{MaxLive: cfg.MaxLiveDrops, MaxBytes: cfg.MaxTotalBytes, Now: clock.Now}
+	var slots Store
+	if newStore == nil {
+		slots = NewMemory(opts)
+	} else {
+		slots = newStore(t, opts)
+	}
+	mem, _ := slots.(*Memory)
+	srv := New(cfg, slots, Options{Page: testPage(), Version: "test", Now: clock.Now, Logger: logger})
 	hs := httptest.NewServer(srv.Handler())
 	t.Cleanup(hs.Close)
-	return &testServer{t: t, srv: srv, store: store, cfg: cfg, clock: clock, logs: logs, logsMu: mu, agentKey: key, http: hs}
+	return &testServer{t: t, srv: srv, store: mem, slots: slots, cfg: cfg, clock: clock, logs: logs, logsMu: mu, agentKey: key, http: hs}
 }
 
 func (ts *testServer) logText() string {
@@ -255,7 +271,7 @@ func revealFixture(t *testing.T, secret string) (key *[32]byte, ct []byte) {
 		t.Fatal(err)
 	}
 	env := crypto.Envelope{V: 1, Type: crypto.TypeReveal, Name: "staging-db-url", Format: crypto.FormatText, Secret: secret}
-	ct, err = crypto.EncryptEnvelope(key, env, crypto.RevealAAD("MTIzNDU2Nzg5MGFiY2RlZg", "staging-db-url", false), nil)
+	ct, err = crypto.EncryptEnvelope(key, env, crypto.RevealAAD("staging-db-url", false), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
