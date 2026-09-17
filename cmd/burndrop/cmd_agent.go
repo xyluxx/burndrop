@@ -12,6 +12,7 @@ import (
 
 	"github.com/burndrop/burndrop/internal/agent"
 	"github.com/burndrop/burndrop/internal/mcpserver"
+	"github.com/burndrop/burndrop/internal/storage"
 )
 
 func (a *app) cmdMCP(ctx context.Context, args []string) error {
@@ -60,12 +61,15 @@ func (a *app) cmdRequest(ctx context.Context, args []string) error {
 	}
 	fmt.Fprintln(a.stdout, out.Message)
 	fmt.Fprintf(a.stdout, "\nrequest id: %s\n", out.RequestID)
+	if out.Retention == storage.RetentionSession {
+		fmt.Fprintln(a.stderr, "note: retention session keeps the value only in the process that fetches it, so with one-shot CLI commands it is gone when fetch returns; use -retention until-revoked or until:<date>, or run the MCP server")
+	}
 	return nil
 }
 
 func (a *app) cmdFetch(ctx context.Context, args []string) error {
 	fs := a.flags("fetch", "[REQUEST_ID] [-wait SECONDS] [-json]")
-	wait := fs.Int("wait", 30, "seconds to wait for the submission (0 to 300)")
+	wait := fs.Int("wait", 30, "seconds to wait for the submission, 1 to 300 (0 means the default of 30)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	if err := a.parse(fs, args); err != nil {
 		return err
@@ -145,7 +149,7 @@ func (e envFlags) Set(v string) error {
 }
 
 func (a *app) cmdRun(ctx context.Context, args []string) int {
-	fs := a.flags("run", "[-env VAR=NAME ...] [-capture-as NAME] [-timeout SECONDS] [-cwd DIR] -- COMMAND [ARGS...]")
+	fs := a.flags("run", "[-env VAR=NAME ...] [-capture-as NAME [-capture-pattern REGEXP] [-capture-retention POLICY]] [-consume] [-timeout SECONDS] [-cwd DIR] -- COMMAND [ARGS...]")
 	env := envFlags{}
 	fs.Var(env, "env", "inject secret NAME as environment variable VAR (repeatable)")
 	captureAs := fs.String("capture-as", "", "store the command's output as a new sendable secret instead of printing it")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -14,22 +15,30 @@ import (
 
 // candidateBackends builds one instance of every backend for detection.
 // Backends that need configuration to be meaningful are still probed with
-// defaults so the table shows whether their tooling is present.
-func (a *app) candidateBackends(paths agent.Paths) []storage.Backend {
+// defaults so the table shows whether their tooling is present. The age
+// vault keeps its key in the credential store when the machine has one,
+// exactly as it will at run time; without one it falls back to an identity
+// file next to the vault, and the returned path is what the saved
+// configuration must then reference.
+func (a *app) candidateBackends(paths agent.Paths) ([]storage.Backend, string) {
 	cfg := agent.Config{Relay: "https://relay.invalid", Storage: "memory"}
 	var out []storage.Backend
+	identityFile := ""
 	for _, name := range agent.KnownBackends {
 		cfg.Storage = name
-		if name == "agevault" {
-			cfg.Backends.AgeVault.IdentityFile = paths.VaultFile() + ".key"
-		}
 		b, err := agent.OpenBackend(cfg, paths, a.getenv)
+		if err != nil && name == "agevault" {
+			identityFile = paths.VaultFile() + ".key"
+			cfg.Backends.AgeVault.IdentityFile = identityFile
+			b, err = agent.OpenBackend(cfg, paths, a.getenv)
+			cfg.Backends.AgeVault.IdentityFile = ""
+		}
 		if err != nil {
 			continue
 		}
 		out = append(out, b)
 	}
-	return out
+	return out, identityFile
 }
 
 func (a *app) cmdInit(ctx context.Context, args []string) error {
@@ -65,7 +74,10 @@ func (a *app) cmdInit(ctx context.Context, args []string) error {
 	fmt.Fprintf(a.stdout, "relay %s: version %s, default link lifetime %ds, agent auth %s\n", rc.Origin, info.Version, info.DefaultTTLSeconds, info.AgentAuth)
 
 	fmt.Fprintln(a.stdout, "\nprobing storage backends...")
-	candidates := storage.Detect(ctx, a.candidateBackends(paths))
+	_, statErr := os.Stat(paths.VaultFile() + ".key")
+	vaultKeyExisted := statErr == nil
+	backends, identityFile := a.candidateBackends(paths)
+	candidates := storage.Detect(ctx, backends)
 	tw := tabwriter.NewWriter(a.stdout, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "BACKEND\tAVAILABLE\tNOTE")
 	for _, c := range candidates {
@@ -139,6 +151,13 @@ func (a *app) cmdInit(ctx context.Context, args []string) error {
 		default:
 			return fmt.Errorf("-agent-key-from must be env, keychain, or prompt")
 		}
+	}
+	if chosen == "agevault" && identityFile != "" {
+		cfg.Backends.AgeVault.IdentityFile = identityFile
+		fmt.Fprintf(a.stdout, "vault key: %s (no credential store is available; keep this file private and backed up)\n", identityFile)
+	} else if identityFile != "" && !vaultKeyExisted {
+		// The fallback key was only needed for the probe.
+		_ = os.Remove(identityFile)
 	}
 	if err := agent.SaveConfig(paths.ConfigFile, cfg); err != nil {
 		return err

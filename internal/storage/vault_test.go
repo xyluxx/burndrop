@@ -199,7 +199,7 @@ func TestVaultBackend(t *testing.T) {
 		}
 		b := fake.backend()
 		p := b.Probe(ctx)
-		if !p.Available || p.Rank != 91 || !strings.Contains(p.Reason, "token-dev") || !strings.Contains(p.Reason, "burndrop") || !strings.Contains(p.Reason, fake.server.URL) {
+		if !p.Available || p.Rank != 85 || !strings.Contains(p.Reason, "token-dev") || !strings.Contains(p.Reason, "burndrop") || !strings.Contains(p.Reason, fake.server.URL) {
 			t.Fatalf("probe: %+v", p)
 		}
 		secret := []byte("sk-live-1234")

@@ -214,6 +214,9 @@ func TestAgentCommands(t *testing.T) {
 	if !strings.HasPrefix(link, c.relay.URL+"/drop#") || reqID == "" {
 		t.Fatalf("request output: %s", out)
 	}
+	if !strings.Contains(out, "&") || strings.Contains(out, "\\u0026") {
+		t.Fatalf("json output must keep the link copyable: %s", out)
+	}
 	out = c.mustRun("request", "-name", "second", "-purpose", "Another one")
 	if !strings.Contains(out, "request id:") || !strings.Contains(out, "/drop#") {
 		t.Fatalf("request text: %s", out)

@@ -294,6 +294,7 @@ func (a *app) load(needKey bool) (*loaded, error) {
 func (a *app) printJSON(v any) error {
 	enc := json.NewEncoder(a.stdout)
 	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false) // links carry "&"; keep them copyable
 	return enc.Encode(v)
 }
 

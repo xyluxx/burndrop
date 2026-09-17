@@ -171,7 +171,7 @@ func (z *Azure) Probe(ctx context.Context) Probe {
 	if err := json.Unmarshal(out, &acct); err != nil || acct.Name == "" {
 		return Probe{Reason: "az account show returned no subscription"}
 	}
-	return Probe{Available: true, Reason: fmt.Sprintf("Azure Key Vault %s as %s, subscription %s (%s)", z.VaultName, acct.User.Name, acct.Name, acct.State), Rank: 91}
+	return Probe{Available: true, Reason: fmt.Sprintf("Azure Key Vault %s as %s, subscription %s (%s)", z.VaultName, acct.User.Name, acct.Name, acct.State), Rank: 85}
 }
 
 func (z *Azure) Put(ctx context.Context, name string, value []byte, meta Metadata) error {

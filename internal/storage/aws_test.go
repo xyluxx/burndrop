@@ -319,7 +319,7 @@ func TestAWSBackend(t *testing.T) {
 
 	t.Run("probe reason", func(t *testing.T) {
 		p := NewAWS(AWS{Runner: newFakeRunner(newAWSFake().handler), Region: "us-east-1"}).Probe(ctx)
-		if !p.Available || p.Rank != 91 || !strings.Contains(p.Reason, "user/DevAdmin") || !strings.Contains(p.Reason, "123456789012") || !strings.Contains(p.Reason, "us-east-1") {
+		if !p.Available || p.Rank != 85 || !strings.Contains(p.Reason, "user/DevAdmin") || !strings.Contains(p.Reason, "123456789012") || !strings.Contains(p.Reason, "us-east-1") {
 			t.Fatalf("probe: %+v", p)
 		}
 	})

@@ -373,7 +373,7 @@ func TestDopplerBackend(t *testing.T) {
 	t.Run("project and config flags", func(t *testing.T) {
 		e := newEnv(t, DopplerOptions{Project: "backend", Config: "prd"})
 		e.fake.project, e.fake.config = "backend", "prd"
-		if p := e.b.Probe(ctx); !p.Available || p.Rank != 92 || !strings.Contains(p.Reason, "Jane Doe") || !strings.Contains(p.Reason, "backend") {
+		if p := e.b.Probe(ctx); !p.Available || p.Rank != 86 || !strings.Contains(p.Reason, "Jane Doe") || !strings.Contains(p.Reason, "backend") {
 			t.Fatalf("probe: %+v", p)
 		}
 		if err := e.b.Put(ctx, "db", value, meta); err != nil {

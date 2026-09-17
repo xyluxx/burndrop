@@ -128,7 +128,7 @@ func (a *AWS) Probe(ctx context.Context) Probe {
 	if a.Region != "" {
 		reason += " in " + a.Region
 	}
-	return Probe{Available: true, Reason: reason, Rank: 91}
+	return Probe{Available: true, Reason: reason, Rank: 85}
 }
 
 func (a *AWS) Put(ctx context.Context, name string, value []byte, meta Metadata) error {

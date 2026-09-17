@@ -113,7 +113,7 @@ func (d *Doppler) Probe(ctx context.Context) Probe {
 	if d.opts.Config != "" {
 		reason += ", config " + d.opts.Config
 	}
-	return Probe{Available: true, Reason: reason, Rank: 92}
+	return Probe{Available: true, Reason: reason, Rank: 86}
 }
 
 // fetch reads the raw values of keys with one "doppler secrets get". A key

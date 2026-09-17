@@ -258,7 +258,7 @@ func (v *Vault) Probe(ctx context.Context) Probe {
 	if v.Namespace != "" {
 		reason += " in namespace " + v.Namespace
 	}
-	return Probe{Available: true, Reason: reason, Rank: 91}
+	return Probe{Available: true, Reason: reason, Rank: 85}
 }
 
 func (v *Vault) Put(ctx context.Context, name string, value []byte, meta Metadata) error {

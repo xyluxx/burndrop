@@ -320,7 +320,7 @@ func TestGCPBackend(t *testing.T) {
 
 	t.Run("probe reason", func(t *testing.T) {
 		p := NewGCP(GCP{Runner: newFakeRunner(newGCPFake().handler)}).Probe(ctx)
-		if !p.Available || p.Rank != 91 || !strings.Contains(p.Reason, "dev@example.com") || !strings.Contains(p.Reason, "my-project") {
+		if !p.Available || p.Rank != 85 || !strings.Contains(p.Reason, "dev@example.com") || !strings.Contains(p.Reason, "my-project") {
 			t.Fatalf("probe: %+v", p)
 		}
 	})

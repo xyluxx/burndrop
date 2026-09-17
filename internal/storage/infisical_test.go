@@ -325,7 +325,7 @@ func TestInfisicalBackend(t *testing.T) {
 	t.Run("scope flags", func(t *testing.T) {
 		e := newEnv(t, InfisicalOptions{ProjectID: "proj-1", Environment: "prod", Path: "/apps"})
 		e.fake.want = map[string]string{"env": "prod", "projectId": "proj-1", "path": "/apps"}
-		if p := e.b.Probe(ctx); !p.Available || p.Rank != 92 || !strings.Contains(p.Reason, "proj-1") || !strings.Contains(p.Reason, "prod") {
+		if p := e.b.Probe(ctx); !p.Available || p.Rank != 86 || !strings.Contains(p.Reason, "proj-1") || !strings.Contains(p.Reason, "prod") {
 			t.Fatalf("probe: %+v", p)
 		}
 		if err := e.b.Put(ctx, "db", value, meta); err != nil {

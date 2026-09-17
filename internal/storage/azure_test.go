@@ -349,7 +349,7 @@ func TestAzureBackend(t *testing.T) {
 
 	t.Run("probe reason", func(t *testing.T) {
 		p := newBackend(newAzureFake(), false).Probe(ctx)
-		if !p.Available || p.Rank != 91 || !strings.Contains(p.Reason, "kv-burndrop") || !strings.Contains(p.Reason, "dev@example.com") || !strings.Contains(p.Reason, "Pay-As-You-Go") {
+		if !p.Available || p.Rank != 85 || !strings.Contains(p.Reason, "kv-burndrop") || !strings.Contains(p.Reason, "dev@example.com") || !strings.Contains(p.Reason, "Pay-As-You-Go") {
 			t.Fatalf("probe: %+v", p)
 		}
 	})

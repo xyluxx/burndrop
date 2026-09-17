@@ -105,7 +105,7 @@ func (i *Infisical) Probe(ctx context.Context) Probe {
 	if _, err := i.run(ctx, "secrets", "folders", "get"); err != nil {
 		return Probe{Reason: "infisical cannot read " + i.scope() + " (" + infisicalErrText(err) + "); run infisical login or set INFISICAL_TOKEN, and run infisical init or pass a project ID"}
 	}
-	return Probe{Available: true, Reason: "authenticated for " + i.scope(), Rank: 92}
+	return Probe{Available: true, Reason: "authenticated for " + i.scope(), Rank: 86}
 }
 
 // fetch reads the raw value stored under key. found is false when the key

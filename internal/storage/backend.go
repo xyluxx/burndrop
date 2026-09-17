@@ -112,6 +112,15 @@ func ParseRetention(policy string, now time.Time) (time.Time, error) {
 }
 
 // Probe is the result of asking a backend whether it can be used here.
+//
+// Rank orders available backends when init recommends one. The ladder:
+// password managers the user signed in to (onepassword 95, bitwarden 94),
+// the OS credential store (keychain 90), team and cloud secret managers
+// that happen to be logged in (infisical and doppler 86; vault, aws, gcp
+// and azure 85), the age vault (80), memory (10), and a plain file (1).
+// A logged-in cloud CLI must never outrank the local credential store: a
+// laptop with an aws login should not be told to keep personal secrets in
+// a cloud account it did not choose.
 type Probe struct {
 	Available bool
 	Reason    string // one line for the operator, for example "signed in as ops@example.com"

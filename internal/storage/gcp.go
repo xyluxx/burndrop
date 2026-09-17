@@ -140,7 +140,7 @@ func (g *GCP) Probe(ctx context.Context) Probe {
 			return Probe{Reason: "gcloud has no default project; set GCP.Project or run gcloud config set project PROJECT_ID"}
 		}
 	}
-	return Probe{Available: true, Reason: fmt.Sprintf("Google Secret Manager as %s, project %s", accounts[0].Account, project), Rank: 91}
+	return Probe{Available: true, Reason: fmt.Sprintf("Google Secret Manager as %s, project %s", accounts[0].Account, project), Rank: 85}
 }
 
 func (g *GCP) Put(ctx context.Context, name string, value []byte, meta Metadata) error {
