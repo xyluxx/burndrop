@@ -223,3 +223,12 @@ func TestLinkLengthIsReasonable(t *testing.T) {
 		t.Fatalf("reveal link unexpectedly long: %d", len(raw))
 	}
 }
+
+func TestRelayOriginFallback(t *testing.T) {
+	if (Drop{}).RelayOrigin("https://page.example") != "https://page.example" || (Drop{Relay: "https://r.example"}).RelayOrigin("https://page.example") != "https://r.example" {
+		t.Fatal("drop relay origin")
+	}
+	if (Reveal{}).RelayOrigin("https://page.example") != "https://page.example" || (Reveal{Relay: "https://r.example"}).RelayOrigin("https://page.example") != "https://r.example" {
+		t.Fatal("reveal relay origin")
+	}
+}

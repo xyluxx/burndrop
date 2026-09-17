@@ -433,3 +433,20 @@ func parseReveal(frag string) (Reveal, error) {
 	}
 	return r, nil
 }
+
+// RelayOrigin returns the relay to talk to: the explicit r field when the
+// link carries one, otherwise the page origin the link was served from.
+func (d Drop) RelayOrigin(pageOrigin string) string {
+	if d.Relay != "" {
+		return d.Relay
+	}
+	return pageOrigin
+}
+
+// RelayOrigin is Drop.RelayOrigin for reveals.
+func (r Reveal) RelayOrigin(pageOrigin string) string {
+	if r.Relay != "" {
+		return r.Relay
+	}
+	return pageOrigin
+}
