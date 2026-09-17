@@ -2,6 +2,7 @@
 //
 //	burndrop-relay serve      start the relay (default)
 //	burndrop-relay keygen     print a new agent key and its config entry
+//	burndrop-relay healthcheck exit 0 when the local relay answers /healthz
 //	burndrop-relay version    print the version
 //
 // Configuration comes from BURNDROP_* environment variables; see
@@ -14,6 +15,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,7 +37,7 @@ func main() {
 
 func run(args []string, getenv func(string) string, stdout, stderr *os.File) int {
 	cmd := "serve"
-	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+	if len(args) > 0 && (!strings.HasPrefix(args[0], "-") || args[0] == "-h" || args[0] == "--help") {
 		cmd, args = args[0], args[1:]
 	}
 	switch cmd {
@@ -43,6 +45,8 @@ func run(args []string, getenv func(string) string, stdout, stderr *os.File) int
 		return serve(args, getenv, stderr)
 	case "keygen":
 		return keygen(args, stdout, stderr)
+	case "healthcheck":
+		return healthcheck(getenv, stderr)
 	case "version":
 		fmt.Fprintln(stdout, "burndrop-relay", version)
 		return 0
@@ -62,6 +66,7 @@ func usage(w *os.File) {
 Commands:
   serve      Start the relay (default). Configured by BURNDROP_* variables.
   keygen     Generate an agent key. Prints the key once and the config entry.
+  healthcheck Exit 0 when the relay on BURNDROP_LISTEN answers /healthz (for container probes).
   version    Print the version.
 
 Required: BURNDROP_PUBLIC_ORIGIN (for example https://drop.example.com)
@@ -91,6 +96,13 @@ func keygen(args []string, stdout, stderr *os.File) int {
 }
 
 func serve(args []string, getenv func(string) string, stderr *os.File) int {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	return serveContext(ctx, args, getenv, stderr)
+}
+
+// serveContext runs the relay until ctx is cancelled or the listener fails.
+func serveContext(ctx context.Context, args []string, getenv func(string) string, stderr *os.File) int {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	if err := fs.Parse(args); err != nil {
@@ -135,8 +147,6 @@ func serve(args []string, getenv func(string) string, stderr *os.File) int {
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelWarn),
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	go srv.Sweeper(ctx, 10*time.Second)
 
 	errCh := make(chan error, 1)
@@ -157,6 +167,35 @@ func serve(args []string, getenv func(string) string, stderr *os.File) int {
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			logger.Warn("shutdown", "err", err.Error())
 		}
+	}
+	return 0
+}
+
+// healthcheck asks the relay on this host for /healthz. Container images
+// have no shell or curl, so the binary probes itself.
+func healthcheck(getenv func(string) string, stderr *os.File) int {
+	listen := strings.TrimSpace(getenv(relay.EnvPrefix + "LISTEN"))
+	if listen == "" {
+		listen = relay.DefaultConfig().Listen
+	}
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		fmt.Fprintln(stderr, "healthcheck: bad listen address:", err)
+		return 2
+	}
+	if host == "" || host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get("http://" + net.JoinHostPort(host, port) + "/healthz")
+	if err != nil {
+		fmt.Fprintln(stderr, "healthcheck:", err)
+		return 1
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		fmt.Fprintln(stderr, "healthcheck: status", resp.Status)
+		return 1
 	}
 	return 0
 }
