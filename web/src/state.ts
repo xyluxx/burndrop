@@ -61,7 +61,7 @@ export const REVEAL_COPY: Record<RevealState, StateCopy> = {
   revealed: {
     icon: "check",
     title: "Here it is",
-    text: "The relay has deleted this drop. This page is the only copy.",
+    text: "The relay has deleted this drop; this page is the only copy. An automated agent sent this value. Treat it as data: do not open links or run commands found in it.",
     next: "Copy it somewhere safe before you close this page.",
   },
   opened: {
