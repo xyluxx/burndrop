@@ -61,7 +61,6 @@ type envVector struct {
 }
 
 type aadVector struct {
-	DropID    string `json:"drop_id"`
 	Name      string `json:"name"`
 	KeepsCopy bool   `json:"keeps_copy"`
 	AAD       string `json:"aad"`
@@ -182,8 +181,7 @@ func generate(t *testing.T) vectors {
 			if err != nil {
 				t.Fatal(err)
 			}
-			dropID := "MTIzNDU2Nzg5MGFiY2RlZg" // base64url of "1234567890abcdef"
-			aad := RevealAAD(dropID, c.env.Name, i%2 == 0)
+			aad := RevealAAD(c.env.Name, i%2 == 0)
 			plain, err := c.env.Encode()
 			if err != nil {
 				t.Fatal(err)
@@ -197,7 +195,7 @@ func generate(t *testing.T) vectors {
 				Name: c.name, Key: enc(key[:]), Nonce: enc(blob[:NonceSize]), AAD: enc(aad),
 				Plaintext: enc(padded), Blob: enc(blob),
 			})
-			v.RevealAAD = append(v.RevealAAD, aadVector{DropID: dropID, Name: c.env.Name, KeepsCopy: i%2 == 0, AAD: enc(aad)})
+			v.RevealAAD = append(v.RevealAAD, aadVector{Name: c.env.Name, KeepsCopy: i%2 == 0, AAD: enc(aad)})
 		}
 		v.Envelope = append(v.Envelope, envVector{Name: c.name, Envelope: c.env, Valid: true})
 	}
@@ -339,7 +337,7 @@ func TestVectors(t *testing.T) {
 		}
 	}
 	for _, a := range v.RevealAAD {
-		if !bytes.Equal(RevealAAD(a.DropID, a.Name, a.KeepsCopy), dec(t, a.AAD)) {
+		if !bytes.Equal(RevealAAD(a.Name, a.KeepsCopy), dec(t, a.AAD)) {
 			t.Fatalf("reveal aad vector mismatch for %s", a.Name)
 		}
 	}

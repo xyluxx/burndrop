@@ -85,7 +85,7 @@ func TestAEADRoundTripAndAAD(t *testing.T) {
 		t.Fatal(err)
 	}
 	env := revealEnvelope("postgres://user:pass@host/db")
-	aad := RevealAAD("abcdefghijklmnopqrstuv", "staging-db-url", false)
+	aad := RevealAAD("staging-db-url", false)
 	blob, err := EncryptEnvelope(key, env, aad, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -98,10 +98,10 @@ func TestAEADRoundTripAndAAD(t *testing.T) {
 		t.Fatalf("round trip mismatch: %+v", got)
 	}
 	// Altered display fields (different AAD) must fail.
-	if _, err := DecryptEnvelope(key, blob, RevealAAD("abcdefghijklmnopqrstuv", "staging-db-url", true)); !errors.Is(err, ErrDecrypt) {
+	if _, err := DecryptEnvelope(key, blob, RevealAAD("staging-db-url", true)); !errors.Is(err, ErrDecrypt) {
 		t.Fatalf("aad mismatch: got %v", err)
 	}
-	if _, err := DecryptEnvelope(key, blob, RevealAAD("abcdefghijklmnopqrstuv", "prod-db-url", false)); !errors.Is(err, ErrDecrypt) {
+	if _, err := DecryptEnvelope(key, blob, RevealAAD("prod-db-url", false)); !errors.Is(err, ErrDecrypt) {
 		t.Fatalf("aad name mismatch: got %v", err)
 	}
 	// Tampered blob must fail.
@@ -350,11 +350,11 @@ func TestZero(t *testing.T) {
 }
 
 func TestRevealAAD(t *testing.T) {
-	a := RevealAAD("id", "name", true)
-	if string(a) != "burndrop/reveal/v1\nid\nname\n1" {
+	a := RevealAAD("name", true)
+	if string(a) != "burndrop/reveal/v1\nname\n1" {
 		t.Fatalf("aad: %q", a)
 	}
-	if bytes.Equal(a, RevealAAD("id", "name", false)) {
+	if bytes.Equal(a, RevealAAD("name", false)) {
 		t.Fatal("keeps_copy must change the aad")
 	}
 }

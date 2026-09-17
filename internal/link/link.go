@@ -174,7 +174,7 @@ func (r Reveal) Build(pageOrigin string) (string, error) {
 
 // AAD returns the additional data that authenticates the display fields.
 func (r Reveal) AAD() []byte {
-	return crypto.RevealAAD(r.ID, r.Name, r.KeepsCopy)
+	return crypto.RevealAAD(r.Name, r.KeepsCopy)
 }
 
 // Parse parses either kind of link.
@@ -269,6 +269,12 @@ func NormalizeOrigin(s string) (string, error) {
 		}
 	default:
 		return "", fmt.Errorf("%w: origin scheme must be https", ErrLink)
+	}
+	// Browsers omit the default port from location.origin and from the
+	// Origin header, so it is dropped here too; otherwise an operator who
+	// writes https://relay.example:443 would never match a page origin.
+	if port := u.Port(); (scheme == "https" && port == "443") || (scheme == "http" && port == "80") {
+		host = strings.TrimSuffix(host, ":"+port)
 	}
 	return scheme + "://" + host, nil
 }

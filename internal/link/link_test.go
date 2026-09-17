@@ -102,7 +102,7 @@ func TestRevealRoundTrip(t *testing.T) {
 	if got.ID != r.ID || got.RevealToken != r.RevealToken || !bytes.Equal(got.Key, r.Key) || got.Name != r.Name || !got.KeepsCopy {
 		t.Fatalf("round trip mismatch: %+v", got)
 	}
-	if !bytes.Equal(got.AAD(), crypto.RevealAAD(id, "staging-db-url", true)) {
+	if !bytes.Equal(got.AAD(), crypto.RevealAAD("staging-db-url", true)) {
 		t.Fatal("aad mismatch")
 	}
 	r.KeepsCopy = false
@@ -189,13 +189,16 @@ func TestBuildValidation(t *testing.T) {
 
 func TestNormalizeOrigin(t *testing.T) {
 	ok := map[string]string{
-		"https://Example.com":          "https://example.com",
-		"https://example.com/":         "https://example.com",
-		"https://example.com:8443":     "https://example.com:8443",
-		"http://localhost:3000":        "http://localhost:3000",
-		"http://127.0.0.1":             "http://127.0.0.1",
-		"https://[2001:db8::1]:443":    "https://[2001:db8::1]:443",
-		"https://sub.example.co.uk/":   "https://sub.example.co.uk",
+		"https://Example.com":        "https://example.com",
+		"https://example.com/":       "https://example.com",
+		"https://example.com:8443":   "https://example.com:8443",
+		"http://localhost:3000":      "http://localhost:3000",
+		"http://127.0.0.1":           "http://127.0.0.1",
+		"https://[2001:db8::1]:443":  "https://[2001:db8::1]",
+		"https://example.com:443/":   "https://example.com",
+		"http://localhost:80":        "http://localhost",
+		"http://localhost:8080":      "http://localhost:8080",
+		"https://sub.example.co.uk/": "https://sub.example.co.uk",
 	}
 	for in, want := range ok {
 		got, err := NormalizeOrigin(in)

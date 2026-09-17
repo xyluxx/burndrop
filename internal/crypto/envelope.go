@@ -140,6 +140,28 @@ func (e Envelope) SecretBytes() ([]byte, error) {
 	return []byte(e.Secret), nil
 }
 
+// SetSecret stores value as text when it is valid UTF-8 without control
+// characters other than tab, newline, and carriage return, and as base64url
+// otherwise.
+func (e *Envelope) SetSecret(value []byte) {
+	if utf8.Valid(value) && !hasBinaryControl(value) {
+		e.Format = FormatText
+		e.Secret = string(value)
+		return
+	}
+	e.Format = FormatBase64
+	e.Secret = Encoding.EncodeToString(value)
+}
+
+func hasBinaryControl(b []byte) bool {
+	for _, c := range b {
+		if c < 0x20 && c != '\t' && c != '\n' && c != '\r' {
+			return true
+		}
+	}
+	return false
+}
+
 // ValidateName checks a secret reference name: 1 to MaxNameLen characters,
 // printable, no control characters, no leading or trailing whitespace.
 func ValidateName(name string) error {
@@ -191,11 +213,14 @@ func ValidateRetention(r string) error {
 
 // RevealAAD builds the additional data for a reveal: the display fields the
 // page shows, joined with newlines behind a fixed domain string, so a link
-// whose display fields were altered fails to decrypt. Section 5.6.
-func RevealAAD(dropID, name string, keepsCopy bool) []byte {
+// whose display fields were altered fails to decrypt. The drop ID is not
+// included because the relay assigns it after the ciphertext exists; the
+// random per-reveal key already makes ciphertext from another reveal
+// undecryptable. Section 5.6.
+func RevealAAD(name string, keepsCopy bool) []byte {
 	c := "0"
 	if keepsCopy {
 		c = "1"
 	}
-	return []byte("burndrop/reveal/v1\n" + dropID + "\n" + name + "\n" + c)
+	return []byte("burndrop/reveal/v1\n" + name + "\n" + c)
 }

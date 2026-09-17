@@ -152,7 +152,7 @@ Forward secrecy statement: compromise of the agent after step 10 reveals nothing
 1. Agent reads the value from the storage backend by reference name.
 2. Agent generates `key` (32 random bytes) and `nonce` (24 random bytes).
 3. Agent builds the envelope, pads it, and encrypts: `ct = xchacha20poly1305_ietf_encrypt(padded, aad, nonce, key)` where `aad` is the canonical display string (section 5.6).
-4. Agent creates a reveal slot with `ciphertext = base64url(nonce || ct)` and receives the drop ID, reveal token, and revoke token.
+4. Agent creates a reveal slot with `ciphertext = base64url(nonce || ct)` and receives the drop ID, reveal token, and revoke token. The ID is assigned by the relay after the ciphertext exists, which is why it is not part of `aad`.
 5. Agent builds the link containing the drop ID, reveal token, `key`, and the display fields, and tells the human what it is, that it opens once, when it expires, and whether the agent keeps its own copy.
 6. Browser parses the fragment, removes it from the address bar, shows the display fields, and waits for the click.
 7. On click, browser posts `{drop_id, reveal_token}`. The relay returns the ciphertext and deletes it atomically, leaving a tombstone with state `opened`.
@@ -189,7 +189,7 @@ Rules:
 - `k` must decode to exactly 32 bytes; `i`, `u`, `o` to exactly 16 bytes.
 - `n` at most 100 characters, `p` and `s` at most 200 characters, `t` one of `session`, `until-revoked`, or `until:<RFC 3339 date>`.
 - `r`, when present, must be an `https://` origin (or `http://localhost` for development). The hosted page accepts `r` only if it matches its configured relay allowlist (default: its own origin). The extension and CLI use `r` directly, defaulting to the link's origin when absent.
-- The reveal `aad` is the string `"<name>/reveal/v1\n" + i + "\n" + n + "\n" + c` (the literal project name, then the fields, joined with newlines). The drop metadata is authenticated by being inside the sealed envelope instead, because sealed boxes have no additional-data input.
+- The reveal `aad` is the string `"burndrop/reveal/v1\n" + n + "\n" + c` (the literal project name, then the display fields, joined with newlines). The drop ID is not bound because the relay assigns it after encryption; the random per-reveal key already makes ciphertext from any other reveal undecryptable. The drop metadata is authenticated by being inside the sealed envelope instead, because sealed boxes have no additional-data input.
 - The page calls `history.replaceState` to remove the fragment before any network request.
 
 Expected link length: about 250 characters plus the metadata text.
