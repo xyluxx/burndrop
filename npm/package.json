@@ -1,0 +1,21 @@
+{
+  "name": "burndrop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "One-time, end-to-end encrypted secret exchange between humans and AI agents. This package runs the burndrop CLI and MCP server (a Go binary) so that `npx burndrop mcp` works.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/burndrop/burndrop.git"
+  },
+  "homepage": "https://github.com/burndrop/burndrop#readme",
+  "keywords": ["secrets", "mcp", "agents", "encryption", "one-time", "credentials"],
+  "bin": {
+    "burndrop": "bin/burndrop.js"
+  },
+  "files": ["bin", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {}
+}

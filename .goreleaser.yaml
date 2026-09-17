@@ -1,0 +1,108 @@
+# GoReleaser configuration. Run by .github/workflows/release.yml on a tag.
+# The page must be built into web/dist before this runs (the workflow does
+# it) so the relay embeds the released page.
+version: 2
+
+project_name: burndrop
+
+before:
+  hooks:
+    - go mod verify
+    - test -f web/dist/page.html
+
+builds:
+  - id: burndrop
+    main: ./cmd/burndrop
+    binary: burndrop
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{ .Version }}"]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+  - id: burndrop-relay
+    main: ./cmd/burndrop-relay
+    binary: burndrop-relay
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{ .Version }}"]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: default
+    ids: [burndrop, burndrop-relay]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - docs/release-verification.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+sboms:
+  - id: archive
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.sbom.json"
+
+signs:
+  - id: checksums
+    cmd: cosign
+    certificate: "${artifact}.pem"
+    signature: "${artifact}.sig"
+    args:
+      - sign-blob
+      - --yes
+      - --output-certificate=${certificate}
+      - --output-signature=${signature}
+      - ${artifact}
+    artifacts: checksum
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Security
+      regexp: '^.*?sec(urity)?(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^docs"
+      - "^test"
+      - "^chore"
+      - "^ci"
+
+release:
+  # Created as a draft; the workflow verifies every signature and the page
+  # hash, then publishes it.
+  draft: true
+  replace_existing_draft: true
+  mode: replace
+  name_template: "{{ .Tag }}"
+  extra_files:
+    - glob: web/dist/page.html
+    - glob: web/dist/page.sha256
+    - glob: extension/dist/*.zip
+    - glob: extension/dist/*.sha256
+  header: |
+    ## Verify this release
+
+    See `docs/release-verification.md`. The drop page for this release is
+    `page.html` with the SHA-256 in `page.sha256` (also printed by
+    `burndrop verify-page` against any relay running it).

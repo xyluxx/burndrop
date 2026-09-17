@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">burndrop</title>
+  <desc id="desc">One-time, end-to-end encrypted secret exchange between humans and AI agents</desc>
+  <rect width="1200" height="320" rx="24" fill="#0c111d"/>
+  <g transform="translate(96 76)">
+    <rect x="0" y="0" width="168" height="168" rx="40" fill="#465fff"/>
+    <path d="M84 34c-22 30-40 54-40 78a40 40 0 0 0 80 0c0-24-18-48-40-78Z" fill="#ffffff" opacity="0.95"/>
+    <rect x="62" y="104" width="44" height="34" rx="8" fill="#465fff"/>
+    <path d="M70 104v-8a14 14 0 0 1 28 0v8" fill="none" stroke="#465fff" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="84" cy="121" r="4" fill="#ffffff"/>
+  </g>
+  <g font-family="Outfit, Inter, 'Segoe UI', system-ui, sans-serif" fill="#ffffff">
+    <text x="320" y="152" font-size="84" font-weight="600" letter-spacing="-2">burndrop</text>
+    <text x="324" y="206" font-size="30" font-weight="400" fill="#d0d5dd">Give an AI agent a secret without pasting it in the chat.</text>
+    <text x="324" y="246" font-size="22" font-weight="400" fill="#98a2b3">End-to-end encrypted, opens once, relay sees only ciphertext.</text>
+  </g>
+</svg>

@@ -1,0 +1,237 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: go (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Format and vet
+        shell: bash
+        run: |
+          test -z "$(gofmt -l cmd internal web)" || { gofmt -l cmd internal web; exit 1; }
+          go vet $(go list ./... | grep -v /node_modules/)
+      - name: Tests with the race detector
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          go test -race -count=1 -coverprofile=coverage.out $(go list ./... | grep -v /node_modules/)
+          go tool cover -func=coverage.out | tail -1 | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Tests
+        if: runner.os != 'Linux'
+        shell: bash
+        run: go test -count=1 $(go list ./... | grep -v /node_modules/)
+      - name: Redis store against Valkey
+        if: runner.os == 'Linux'
+        run: |
+          docker run -d --name valkey -p 127.0.0.1:6379:6379 valkey/valkey:8-alpine
+          for i in $(seq 1 30); do docker exec valkey valkey-cli ping >/dev/null 2>&1 && break; sleep 1; done
+          BURNDROP_TEST_REDIS_URL=redis://127.0.0.1:6379/0 go test -race -count=1 -run 'Redis' ./internal/relay/
+          docker rm -f valkey
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Install
+        working-directory: web
+        run: npm ci --no-audit --no-fund
+      - name: Type check, unit tests, build
+        working-directory: web
+        run: |
+          npm run typecheck
+          npx vitest run --coverage
+          node build.mjs --version ci
+          cat dist/page.meta.json
+      - name: Browsers
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end against the real relay
+        working-directory: web
+        run: |
+          node e2e/build-relay.mjs
+          npx playwright test
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: playwright-web
+          path: web/test-results
+          retention-days: 7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: page
+          path: |
+            web/dist/page.html
+            web/dist/page.meta.json
+            web/dist/page.sha256
+            web/build/ext
+          retention-days: 7
+
+  extension:
+    runs-on: ubuntu-latest
+    needs: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            extension/package-lock.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Page for the extension
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          node build.mjs --version ci
+          npx playwright install --with-deps chromium
+      - name: Build and test
+        working-directory: extension
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          npm run build
+          npm test
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: playwright-extension
+          path: extension/test-results
+          retention-days: 7
+
+  sdk-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: sdk/python/uv.lock
+      - name: Lint, type check, test
+        working-directory: sdk/python
+        run: |
+          uv sync --frozen
+          uv run ruff check
+          uv run mypy --strict src
+          uv run pytest -q
+
+  sdk-typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sdk/typescript/package-lock.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build and test
+        working-directory: sdk/typescript
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npm test
+
+  interop:
+    runs-on: ubuntu-latest
+    needs: [sdk-python, sdk-typescript]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: sdk/python/uv.lock
+      - name: Every language opens what the others produced
+        run: |
+          (cd sdk/python && uv sync --frozen)
+          (cd sdk/typescript && npm ci --no-audit --no-fund && npm run build)
+          make interop
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the relay image
+        run: |
+          docker build --build-arg VERSION=ci -t burndrop-relay:ci .
+          docker run --rm burndrop-relay:ci version
+          docker run -d --name relay -e BURNDROP_PUBLIC_ORIGIN=http://localhost:8080 -e BURNDROP_AGENT_AUTH=off -p 127.0.0.1:8080:8080 --read-only burndrop-relay:ci
+          for i in $(seq 1 30); do curl -fs http://127.0.0.1:8080/healthz >/dev/null && break; sleep 1; done
+          curl -fs http://127.0.0.1:8080/api/v1/info
+          curl -fs -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/drop
+          docker rm -f relay
+
+  deploy-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compose files parse
+        run: |
+          (cd deploy/compose && DOMAIN=drop.example.com AGENT_KEYS=a:sha256:x docker compose config --quiet)
+          (cd deploy/cloudflare && DOMAIN=drop.example.com AGENT_KEYS=a:sha256:x TUNNEL_TOKEN=t docker compose config --quiet)
+          (cd deploy/nipio && DOMAIN=drop.203-0-113-10.nip.io AGENT_KEYS=a:sha256:x docker compose config --quiet)
+          (cd deploy/tailscale && PUBLIC_ORIGIN=https://x.example.ts.net AGENT_KEYS=a:sha256:x docker compose config --quiet)
+          (cd deploy/tailscale && PUBLIC_ORIGIN=https://x.example.ts.net AGENT_KEYS=a:sha256:x TS_AUTHKEY=k docker compose -f docker-compose.sidecar.yml config --quiet)
