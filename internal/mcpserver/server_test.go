@@ -13,12 +13,12 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/burndrop/burndrop/internal/agent"
-	"github.com/burndrop/burndrop/internal/client"
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/link"
-	"github.com/burndrop/burndrop/internal/relay"
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/agent"
+	"github.com/xyluxx/burndrop/internal/client"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/link"
+	"github.com/xyluxx/burndrop/internal/relay"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 const testKey = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG"

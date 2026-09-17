@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 const (

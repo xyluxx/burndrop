@@ -23,7 +23,7 @@ import (
 
 	"golang.org/x/crypto/curve25519"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 type file struct {

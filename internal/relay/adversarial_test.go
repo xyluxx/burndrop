@@ -7,8 +7,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/link"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/link"
 )
 
 // These tests are the attacks from the brief, run against the real HTTP

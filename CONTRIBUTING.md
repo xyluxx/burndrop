@@ -18,7 +18,7 @@ Requirements: Go (the version in `go.mod`), Node 22 or later, and for the
 Python SDK, `uv`. Docker is optional (Redis store tests, container image).
 
 ```bash
-git clone https://github.com/burndrop/burndrop.git
+git clone https://github.com/xyluxx/burndrop.git
 cd burndrop
 make test          # Go unit tests (make race adds the race detector and coverage)
 make web           # builds web/dist/page.html and runs the page's unit tests

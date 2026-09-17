@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/burndrop/burndrop/web"
+	"github.com/xyluxx/burndrop/web"
 )
 
 // ClientHeader must be present on every API request. Its presence forces a

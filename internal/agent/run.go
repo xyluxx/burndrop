@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 // RunInput is the run_with_secret input.

@@ -21,7 +21,7 @@ First run `npx burndrop init -relay https://drop.example.com` once to pick
 a storage backend and store the agent key.
 
 Documentation, source, and release verification:
-https://github.com/burndrop/burndrop
+https://github.com/xyluxx/burndrop
 
 Supported platforms: Linux, macOS, and Windows on x64 and arm64. On other
 platforms the command prints where to get a build.

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 // runStoreSuite checks the Store contract against fresh stores from newStore.

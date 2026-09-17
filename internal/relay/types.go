@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 // Kind distinguishes the two flows.

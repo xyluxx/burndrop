@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 func TestDropFlow(t *testing.T) {

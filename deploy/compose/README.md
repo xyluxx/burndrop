@@ -21,7 +21,7 @@ fragments, which browsers never send to servers.
 1. Get the files.
 
    ```bash
-   git clone https://github.com/burndrop/burndrop.git
+   git clone https://github.com/xyluxx/burndrop.git
    cd burndrop/deploy/compose
    cp .env.example .env
    ```

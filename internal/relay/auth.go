@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 // anonymousAgent is the identity recorded for a caller without a bearer key

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/burndrop/burndrop/internal/agent"
-	"github.com/burndrop/burndrop/internal/client"
-	"github.com/burndrop/burndrop/web"
+	"github.com/xyluxx/burndrop/internal/agent"
+	"github.com/xyluxx/burndrop/internal/client"
+	"github.com/xyluxx/burndrop/web"
 )
 
 // cmdVerifyPage fetches the hosted drop page and compares its hash with the

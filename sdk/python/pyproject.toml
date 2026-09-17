@@ -19,8 +19,8 @@ classifiers = [
 dependencies = ["pynacl==1.6.2"]
 
 [project.urls]
-Homepage = "https://github.com/burndrop/burndrop"
-Documentation = "https://github.com/burndrop/burndrop/tree/main/sdk/python"
+Homepage = "https://github.com/xyluxx/burndrop"
+Documentation = "https://github.com/xyluxx/burndrop/tree/main/sdk/python"
 
 [build-system]
 requires = ["uv_build>=0.12.6,<0.13.0"]

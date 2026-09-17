@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 // Store is the slot storage contract. Every method that reads or changes a

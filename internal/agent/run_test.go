@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 // shell returns a command prefix that runs a script string on this platform.

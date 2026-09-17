@@ -10,9 +10,9 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/burndrop/burndrop/internal/agent"
-	"github.com/burndrop/burndrop/internal/mcpserver"
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/agent"
+	"github.com/xyluxx/burndrop/internal/mcpserver"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 func (a *app) cmdMCP(ctx context.Context, args []string) error {

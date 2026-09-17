@@ -1,4 +1,4 @@
-module github.com/burndrop/burndrop
+module github.com/xyluxx/burndrop
 
 go 1.27
 

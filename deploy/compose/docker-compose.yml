@@ -9,7 +9,7 @@
 
 services:
   relay:
-    image: ${RELAY_IMAGE:-ghcr.io/burndrop/burndrop-relay:latest}
+    image: ${RELAY_IMAGE:-ghcr.io/xyluxx/burndrop-relay:latest}
     build:
       context: ../..
       dockerfile: Dockerfile

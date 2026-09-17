@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 func envMap(m map[string]string) func(string) string {

@@ -15,9 +15,9 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/burndrop/burndrop/internal/agent"
-	"github.com/burndrop/burndrop/internal/client"
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/agent"
+	"github.com/xyluxx/burndrop/internal/client"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 type app struct {

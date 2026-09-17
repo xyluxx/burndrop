@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/relay"
+	"github.com/xyluxx/burndrop/internal/relay"
 )
 
 // capture returns a file to use as stdout or stderr and a function that

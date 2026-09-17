@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/client"
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/link"
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/client"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/link"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 // Agent implements the flows. Construct it with New.

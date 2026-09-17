@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/link"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/link"
 )
 
 // EnvPrefix is prepended to every configuration variable name.

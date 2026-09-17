@@ -17,7 +17,7 @@ try {
 } catch {
   process.stderr.write(
     `burndrop: no prebuilt binary for ${os} ${cpu} (${name}).\n` +
-      "Install from the GitHub release page or build from source: go install github.com/burndrop/burndrop/cmd/burndrop@latest\n",
+      "Install from the GitHub release page or build from source: go install github.com/xyluxx/burndrop/cmd/burndrop@latest\n",
   );
   process.exit(1);
 }

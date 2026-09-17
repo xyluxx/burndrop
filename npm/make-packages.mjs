@@ -55,7 +55,7 @@ export function makePackages({ version, dist, out }) {
           version,
           description: `burndrop CLI binary for ${p.os} ${p.cpu}. Install the burndrop package instead of this one.`,
           license: "Apache-2.0",
-          repository: { type: "git", url: "git+https://github.com/burndrop/burndrop.git" },
+          repository: { type: "git", url: "git+https://github.com/xyluxx/burndrop.git" },
           os: [p.os],
           cpu: [p.cpu],
           files: ["bin"],

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/relay"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/relay"
 )
 
 const testKey = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG"

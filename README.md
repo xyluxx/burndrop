@@ -6,15 +6,15 @@
 <p align="center"><strong>One-time, end-to-end encrypted secret exchange between humans and AI agents, through a relay that only ever sees ciphertext.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/burndrop/burndrop/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/burndrop/burndrop/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/burndrop/burndrop/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/burndrop/burndrop/actions/workflows/codeql.yml/badge.svg"></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/burndrop/burndrop"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/burndrop/burndrop/badge"></a>
-  <a href="https://goreportcard.com/report/github.com/burndrop/burndrop"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/burndrop/burndrop"></a>
-  <a href="https://pkg.go.dev/github.com/burndrop/burndrop"><img alt="Go Reference" src="https://pkg.go.dev/badge/github.com/burndrop/burndrop.svg"></a>
-  <a href="https://github.com/burndrop/burndrop/releases"><img alt="Release" src="https://img.shields.io/github/v/release/burndrop/burndrop?display_name=tag"></a>
+  <a href="https://github.com/xyluxx/burndrop/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/xyluxx/burndrop/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/xyluxx/burndrop/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/xyluxx/burndrop/actions/workflows/codeql.yml/badge.svg"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/xyluxx/burndrop"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/xyluxx/burndrop/badge"></a>
+  <a href="https://goreportcard.com/report/github.com/xyluxx/burndrop"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/xyluxx/burndrop"></a>
+  <a href="https://pkg.go.dev/github.com/xyluxx/burndrop"><img alt="Go Reference" src="https://pkg.go.dev/badge/github.com/xyluxx/burndrop.svg"></a>
+  <a href="https://github.com/xyluxx/burndrop/releases"><img alt="Release" src="https://img.shields.io/github/v/release/xyluxx/burndrop?display_name=tag"></a>
   <a href="https://www.npmjs.com/package/burndrop"><img alt="npm" src="https://img.shields.io/npm/v/burndrop"></a>
   <a href="https://pypi.org/project/burndrop/"><img alt="PyPI" src="https://img.shields.io/pypi/v/burndrop"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/burndrop/burndrop"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/xyluxx/burndrop"></a>
 </p>
 
 <p align="center">
@@ -129,24 +129,33 @@ Details: [architecture](docs/architecture.md), [threat model](docs/threat-model.
 
 ## Quickstart
 
-Five minutes on one machine. Requirements: Docker, and Go 1.27 or a
-release binary for the agent CLI.
+Five minutes on one machine. Requirements: Go 1.27, Node 22 or later, and
+make to build from source; or Docker for the relay and a release binary
+for the CLI.
 
 1. Run a relay. Agent authentication is off here because everything is
    local; production relays require agent keys.
 
    ```bash
+   git clone https://github.com/xyluxx/burndrop.git && cd burndrop
+   make web build                  # builds the page and both binaries into bin/
+   BURNDROP_PUBLIC_ORIGIN=http://localhost:8080 BURNDROP_AGENT_AUTH=off bin/burndrop-relay serve
+   ```
+
+   Or the container:
+
+   ```bash
    docker run -d --name burndrop-relay -p 127.0.0.1:8080:8080 \
      -e BURNDROP_PUBLIC_ORIGIN=http://localhost:8080 \
      -e BURNDROP_AGENT_AUTH=off \
-     ghcr.io/burndrop/burndrop-relay:latest
+     ghcr.io/xyluxx/burndrop-relay:latest
    ```
 
 2. Install the agent CLI and point it at the relay. `init` probes the
    storage backends on the machine and recommends the strongest one.
 
    ```bash
-   go install github.com/burndrop/burndrop/cmd/burndrop@latest   # or a release binary, or npx burndrop
+   go install github.com/xyluxx/burndrop/cmd/burndrop@latest   # or bin/burndrop from the build above, a release binary, or npx burndrop
    burndrop init -relay http://localhost:8080
    ```
 
@@ -194,7 +203,8 @@ claude mcp add burndrop -- burndrop mcp
 burndrop instructions -format claude >> CLAUDE.md
 ```
 
-Claude Desktop, Cursor, Windsurf, and other MCP clients: merge
+Agents that open this repository find the same steps in
+[`AGENTS.md`](AGENTS.md). Claude Desktop, Cursor, Windsurf, and other MCP clients: merge
 [`agent-instructions/mcp/mcp.json`](agent-instructions/mcp/mcp.json) into
 the client configuration (or use `npx -y burndrop mcp` as the command) and
 add the rules from [`agent-instructions/`](agent-instructions/) to your
@@ -243,7 +253,7 @@ if (result.value) await agent.runWithSecret("node", ["bill.js"], { OPENAI_API_KE
 The short version for a domain:
 
 ```bash
-git clone https://github.com/burndrop/burndrop.git && cd burndrop/deploy/compose
+git clone https://github.com/xyluxx/burndrop.git && cd burndrop/deploy/compose
 cp .env.example .env                                  # set DOMAIN
 docker compose run --rm relay keygen -id agent1       # hash goes in .env, key goes to the agent
 docker compose up -d

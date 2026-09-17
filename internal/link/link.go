@@ -14,7 +14,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 // Link kinds and page paths.

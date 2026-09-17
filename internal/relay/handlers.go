@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 // Request and response bodies. Field names are the public API.

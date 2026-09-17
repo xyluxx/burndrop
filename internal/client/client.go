@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/link"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/link"
 )
 
 // ClientHeader must be present on every API request; the relay rejects

@@ -15,7 +15,7 @@ Checked on 2026-09-17: npm registry, PyPI, GitHub handle (user or organization),
 ## Working choice: burndrop
 
 Reasons:
-- Free everywhere that matters, including the GitHub handle, so the project can live at github.com/burndrop/burndrop with matching npm, PyPI, and domain names.
+- Free everywhere that matters, including the GitHub handle, so the project can live at github.com/xyluxx/burndrop with matching npm, PyPI, and domain names.
 - It says what the tool does in one word to the audience that matters: "burn after reading" is the one-time property, "dead drop" is the covert handoff.
 - Eight characters, easy to type as a CLI (`burndrop request`), easy to say.
 - No trademark collision found in software or security products.

@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security report
-    url: https://github.com/burndrop/burndrop/security/advisories/new
+    url: https://github.com/xyluxx/burndrop/security/advisories/new
     about: Report a vulnerability privately. Please do not open a public issue for security problems.
   - name: Questions
-    url: https://github.com/burndrop/burndrop/discussions
+    url: https://github.com/xyluxx/burndrop/discussions
     about: Ask about setup, deployment, or integration.

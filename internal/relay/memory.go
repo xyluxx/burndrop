@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 // Memory is the default store: a map guarded by one mutex. Nothing is ever

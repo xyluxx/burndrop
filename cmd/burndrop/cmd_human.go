@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/client"
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/link"
+	"github.com/xyluxx/burndrop/internal/client"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/link"
 )
 
 // cmdDrop is the human side of a request without a browser: it does exactly

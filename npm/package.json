@@ -6,9 +6,9 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/burndrop/burndrop.git"
+    "url": "git+https://github.com/xyluxx/burndrop.git"
   },
-  "homepage": "https://github.com/burndrop/burndrop#readme",
+  "homepage": "https://github.com/xyluxx/burndrop#readme",
   "keywords": ["secrets", "mcp", "agents", "encryption", "one-time", "credentials"],
   "bin": {
     "burndrop": "bin/burndrop.js"

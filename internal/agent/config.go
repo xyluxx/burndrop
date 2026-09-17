@@ -11,8 +11,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/burndrop/burndrop/internal/link"
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/link"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 // Config is the agent configuration file (docs/design.md section 8.5).

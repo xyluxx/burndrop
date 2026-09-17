@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/crypto"
 )
 
 func newDrop(kind Kind, now time.Time, ttl time.Duration) (*Drop, string, string) {

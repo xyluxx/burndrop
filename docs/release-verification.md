@@ -26,7 +26,7 @@ that built it):
 cosign verify-blob \
   --certificate checksums.txt.pem \
   --signature checksums.txt.sig \
-  --certificate-identity-regexp '^https://github.com/burndrop/burndrop/\.github/workflows/release\.yml@refs/tags/v' \
+  --certificate-identity-regexp '^https://github.com/xyluxx/burndrop/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   checksums.txt
 ```
@@ -34,7 +34,7 @@ cosign verify-blob \
 Build provenance (SLSA), checked against GitHub's attestation store:
 
 ```bash
-gh attestation verify burndrop_vX.Y.Z_linux_amd64.tar.gz --repo burndrop/burndrop
+gh attestation verify burndrop_vX.Y.Z_linux_amd64.tar.gz --repo xyluxx/burndrop
 ```
 
 The archive contains `burndrop` (or `burndrop-relay`), the license, and
@@ -48,11 +48,11 @@ burndrop-relay version
 ## 2. Container image
 
 ```bash
-cosign verify ghcr.io/burndrop/burndrop-relay:vX.Y.Z \
-  --certificate-identity-regexp '^https://github.com/burndrop/burndrop/\.github/workflows/release\.yml@refs/tags/v' \
+cosign verify ghcr.io/xyluxx/burndrop-relay:vX.Y.Z \
+  --certificate-identity-regexp '^https://github.com/xyluxx/burndrop/\.github/workflows/release\.yml@refs/tags/v' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
-gh attestation verify oci://ghcr.io/burndrop/burndrop-relay:vX.Y.Z --repo burndrop/burndrop
+gh attestation verify oci://ghcr.io/xyluxx/burndrop-relay:vX.Y.Z --repo xyluxx/burndrop
 ```
 
 Pin images by digest in production; `cosign verify` prints it.

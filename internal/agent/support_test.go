@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/storage"
+	"github.com/xyluxx/burndrop/internal/storage"
 )
 
 func TestRedactor(t *testing.T) {

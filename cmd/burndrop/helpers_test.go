@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/burndrop/burndrop/web"
+	"github.com/xyluxx/burndrop/web"
 )
 
 // testPage builds a web.Page for tests without a built page.

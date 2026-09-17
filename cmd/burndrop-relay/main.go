@@ -23,9 +23,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/burndrop/burndrop/internal/crypto"
-	"github.com/burndrop/burndrop/internal/relay"
-	"github.com/burndrop/burndrop/web"
+	"github.com/xyluxx/burndrop/internal/crypto"
+	"github.com/xyluxx/burndrop/internal/relay"
+	"github.com/xyluxx/burndrop/web"
 )
 
 // version is set at build time with -ldflags "-X main.version=v1.2.3".

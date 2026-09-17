@@ -12,7 +12,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/burndrop/burndrop/internal/agent"
+	"github.com/xyluxx/burndrop/internal/agent"
 )
 
 // ServerName is the MCP implementation name.
