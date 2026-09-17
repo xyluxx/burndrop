@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "burndrop": {
+      "type": "stdio",
+      "command": "burndrop",
+      "args": ["mcp"]
+    }
+  }
+}

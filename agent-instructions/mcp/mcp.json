@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "burndrop": {
+      "command": "burndrop",
+      "args": ["mcp"]
+    }
+  }
+}
