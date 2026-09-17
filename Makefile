@@ -71,7 +71,7 @@ sdk-typescript: ## TypeScript SDK tests
 	cd sdk/typescript && npm ci --no-audit --no-fund && npm test
 
 extension: ## Build and test the browser extension
-	cd extension && npm ci --no-audit --no-fund && npm run build && npm test
+	cd extension && npm ci --no-audit --no-fund && npm run e2e:build-relay && npm run build && npm test
 
 interop: ## Cross-language interop: each language generates, every language checks
 	cd sdk/python && uv run python ../../spec/interop/python_gen.py

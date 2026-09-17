@@ -1,0 +1,31 @@
+{
+  "name": "burndrop-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The burndrop browser extension: opens drop and reveal links in a bundled copy of the page so the page a relay serves never runs.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "build:test": "node build.mjs --test",
+    "icons": "node scripts/make-icons.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run && node build.mjs --test && playwright test",
+    "test:unit": "vitest run",
+    "test:e2e": "node build.mjs --test && playwright test",
+    "e2e:build-relay": "node ../web/e2e/build-relay.mjs",
+    "e2e:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/chrome": "0.3.0",
+    "@types/node": "24.13.5",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "vitest": "5.0.1"
+  }
+}

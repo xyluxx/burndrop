@@ -128,6 +128,7 @@ jobs:
         working-directory: extension
         run: |
           npm ci --no-audit --no-fund
+          npm run e2e:build-relay
           npm run typecheck
           npm run build
           npm test

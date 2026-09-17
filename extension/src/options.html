@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>burndrop</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <span class="brand">burndrop</span>
+        <h1>Relays this extension protects</h1>
+        <p class="lead">A drop or reveal link from a protected relay opens in the page bundled with this extension. The page the relay serves never runs, so a modified or replaced page cannot read what you paste or reveal.</p>
+      </header>
+
+      <section class="card" aria-labelledby="origins-heading">
+        <h2 id="origins-heading">Protected relays</h2>
+        <ul id="origins" class="list"></ul>
+        <p id="empty" class="muted">No relays yet. Add the origin your agent's links point at.</p>
+        <form id="add-form" class="row" novalidate>
+          <label for="origin" class="sr-only">Relay origin</label>
+          <input id="origin" class="field" type="url" placeholder="https://relay.example" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <button type="submit" id="add" class="btn-primary">Add</button>
+        </form>
+        <p class="hint">The browser will ask you to let the extension act on that site. That permission is what lets it catch the links before the page loads.</p>
+        <p id="add-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="card" aria-labelledby="verify-heading">
+        <h2 id="verify-heading">Verify a relay's page</h2>
+        <p class="muted">Fetches the page a relay serves at /drop and compares it with the page bundled here. Useful for a relay you have not added, or to check one you have.</p>
+        <form id="verify-form" class="row" novalidate>
+          <label for="verify-origin" class="sr-only">Relay origin to verify</label>
+          <input id="verify-origin" class="field" type="url" placeholder="https://relay.example" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <button type="submit" id="verify" class="btn-secondary">Verify</button>
+        </form>
+        <div id="verify-result" class="result" role="status" aria-live="polite" hidden></div>
+      </section>
+
+      <footer class="foot">
+        <span id="version">burndrop extension</span>
+        <span id="bundled"></span>
+      </footer>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
