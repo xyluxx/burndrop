@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": true,
+    "noEmit": true
+  },
+  "include": ["../../spec/interop/typescript_gen.ts", "../../spec/interop/typescript_check.ts"]
+}

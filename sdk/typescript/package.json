@@ -1,0 +1,81 @@
+{
+  "name": "@burndrop/sdk",
+  "version": "0.1.0",
+  "description": "One-time, end-to-end encrypted secret exchange between humans and AI agents through a zero-knowledge relay. TypeScript SDK: crypto, links, relay client, agent flows.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto.d.ts",
+      "import": "./dist/crypto.js"
+    },
+    "./link": {
+      "types": "./dist/link.d.ts",
+      "import": "./dist/link.js"
+    },
+    "./relay": {
+      "types": "./dist/relay.d.ts",
+      "import": "./dist/relay.js"
+    },
+    "./agent": {
+      "types": "./dist/agent.d.ts",
+      "import": "./dist/agent.js"
+    },
+    "./human": {
+      "types": "./dist/human.d.ts",
+      "import": "./dist/human.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.interop.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "interop:gen": "tsx ../../spec/interop/typescript_gen.ts",
+    "interop:check": "tsx ../../spec/interop/typescript_check.ts",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "secrets",
+    "credentials",
+    "end-to-end-encryption",
+    "libsodium",
+    "sealed-box",
+    "xchacha20-poly1305",
+    "ai-agents",
+    "mcp"
+  ],
+  "dependencies": {
+    "libsodium-wrappers": "0.8.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.3",
+    "@vitest/coverage-v8": "^5.0.1",
+    "eslint": "^10.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.1"
+  }
+}
