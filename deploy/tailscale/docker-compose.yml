@@ -1,0 +1,21 @@
+# Relay bound to localhost; Tailscale on the host exposes it with
+# "tailscale funnel --bg 8080" (or "tailscale serve --bg 8080").
+
+services:
+  relay:
+    image: ${RELAY_IMAGE:-ghcr.io/burndrop/burndrop-relay:latest}
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      BURNDROP_LISTEN: ":8080"
+      BURNDROP_PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN to https://<machine>.<tailnet>.ts.net}"
+      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:?run docker compose run --rm relay keygen}"
+      BURNDROP_TRUSTED_PROXIES: "127.0.0.1/32,::1/128"
+      BURNDROP_LOG_FORMAT: json
+    ports:
+      - "127.0.0.1:8080:8080"

@@ -1,0 +1,23 @@
+# Caddy in front of the relay. Certificates come from Let's Encrypt (or
+# ZeroSSL) automatically for the domain in DOMAIN.
+#
+# Access logging stays off. Caddy would log client addresses and paths; the
+# relay already logs what an operator needs without any identifiers.
+
+{$DOMAIN} {
+	# The page is half a megabyte of inline script and font; compress only
+	# that. API responses carry per-request secrets (tokens) and stay
+	# uncompressed so their size never reveals anything.
+	@page {
+		method GET HEAD
+		path / /drop /reveal
+	}
+	encode @page zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		-Server
+	}
+
+	reverse_proxy relay:8080
+}

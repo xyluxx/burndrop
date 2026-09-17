@@ -1,0 +1,41 @@
+# Relay plus a Tailscale sidecar. The relay shares the sidecar's network
+# namespace, so Tailscale's serve configuration proxies to 127.0.0.1:8080
+# and Funnel makes it public at https://<TS_HOSTNAME>.<tailnet>.ts.net.
+
+services:
+  tailscale:
+    image: tailscale/tailscale:v1.90
+    hostname: ${TS_HOSTNAME:-burndrop}
+    restart: unless-stopped
+    environment:
+      TS_AUTHKEY: "${TS_AUTHKEY:?create an auth key in the Tailscale admin console}"
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/funnel.json
+      TS_USERSPACE: "true"
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+      - ./funnel.json:/config/funnel.json:ro
+    cap_add:
+      - NET_ADMIN
+
+  relay:
+    image: ${RELAY_IMAGE:-ghcr.io/burndrop/burndrop-relay:latest}
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
+    environment:
+      BURNDROP_LISTEN: "127.0.0.1:8080"
+      BURNDROP_PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN to https://<TS_HOSTNAME>.<tailnet>.ts.net}"
+      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:?run docker compose run --rm relay keygen}"
+      BURNDROP_TRUSTED_PROXIES: "127.0.0.1/32,::1/128"
+      BURNDROP_LOG_FORMAT: json
+
+volumes:
+  tailscale_state:

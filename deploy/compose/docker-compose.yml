@@ -1,0 +1,75 @@
+# burndrop relay behind Caddy on your own domain.
+#
+#   cp .env.example .env            # set DOMAIN and AGENT_KEYS
+#   docker compose run --rm relay keygen -id agent1
+#   docker compose up -d
+#
+# Add "--profile redis" to run more than one relay instance behind a load
+# balancer; a single instance keeps drops in memory and needs nothing else.
+
+services:
+  relay:
+    image: ${RELAY_IMAGE:-ghcr.io/burndrop/burndrop-relay:latest}
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      BURNDROP_LISTEN: ":8080"
+      BURNDROP_PUBLIC_ORIGIN: "https://${DOMAIN:?set DOMAIN in .env}"
+      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:?run docker compose run --rm relay keygen and put the id:sha256:... line in .env}"
+      BURNDROP_TRUSTED_PROXIES: "${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}"
+      BURNDROP_STORE: "${STORE:-memory}"
+      BURNDROP_REDIS_URL: "${REDIS_URL:-}"
+      BURNDROP_DEFAULT_TTL: "${DEFAULT_TTL:-1h}"
+      BURNDROP_MAX_TTL: "${MAX_TTL:-24h}"
+      BURNDROP_LOG_FORMAT: json
+      BURNDROP_LOG_LEVEL: "${LOG_LEVEL:-info}"
+    expose:
+      - "8080"
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: "${DOMAIN}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      relay:
+        condition: service_healthy
+    networks:
+      - internal
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    profiles: [redis]
+    restart: unless-stopped
+    # No persistence: drops must never touch a disk. Everything lives in
+    # memory and is gone when the process stops.
+    command: ["valkey-server", "--save", "", "--appendonly", "no", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    read_only: true
+    tmpfs:
+      - /data
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks:
+      - internal
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:

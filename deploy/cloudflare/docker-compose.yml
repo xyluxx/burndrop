@@ -1,0 +1,42 @@
+# Relay published through a Cloudflare Tunnel. No inbound ports: cloudflared
+# opens an outbound connection to Cloudflare, which terminates TLS at its
+# edge and forwards to http://relay:8080 over the tunnel.
+
+services:
+  relay:
+    image: ${RELAY_IMAGE:-ghcr.io/burndrop/burndrop-relay:latest}
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      BURNDROP_LISTEN: ":8080"
+      BURNDROP_PUBLIC_ORIGIN: "https://${DOMAIN:?set DOMAIN in .env}"
+      BURNDROP_AGENT_KEYS: "${AGENT_KEYS:?run docker compose run --rm relay keygen}"
+      BURNDROP_TRUSTED_PROXIES: "${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}"
+      BURNDROP_LOG_FORMAT: json
+    expose:
+      - "8080"
+    networks:
+      - internal
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.11.1
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: "${TUNNEL_TOKEN:?create a tunnel in Zero Trust and paste its token}"
+    depends_on:
+      relay:
+        condition: service_healthy
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks:
+      - internal
+
+networks:
+  internal:

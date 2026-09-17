@@ -1,0 +1,7 @@
+# A quick trial on any host with a public IP: the same Compose deployment as
+# deploy/compose, with a nip.io or sslip.io name instead of your own domain.
+# Set DOMAIN in .env to something like drop.203-0-113-10.nip.io (your IP with
+# dots replaced by hyphens).
+
+include:
+  - path: ../compose/docker-compose.yml
