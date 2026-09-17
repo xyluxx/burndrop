@@ -59,3 +59,12 @@ burndrop instructions -format cursor > agent-instructions/cursor-rules/burndrop.
 burndrop instructions -format mcp-json > agent-instructions/mcp/mcp.json
 burndrop instructions -format text > agent-instructions/system-prompt.txt
 ```
+
+## Full briefing for an agent
+
+`onboarding-prompt.md` is a complete, self-contained explanation of burndrop
+written for an AI agent: what it is, the words it will see, setup steps, the
+eight tools, the eight rules verbatim, both flows step by step, delivery,
+the reveal password, error handling, and a quick reference. Hand it to an
+agent that has never seen burndrop; the generated files above are the short
+rules for every session afterwards.

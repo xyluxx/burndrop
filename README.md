@@ -218,7 +218,9 @@ burndrop instructions -format claude >> CLAUDE.md
 ```
 
 Agents that open this repository find the same steps in
-[`AGENTS.md`](AGENTS.md). Claude Desktop, Cursor, Windsurf, and other MCP clients: merge
+[`AGENTS.md`](AGENTS.md). To brief an agent that only uses burndrop,
+hand it [`agent-instructions/onboarding-prompt.md`](agent-instructions/onboarding-prompt.md).
+Claude Desktop, Cursor, Windsurf, and other MCP clients: merge
 [`agent-instructions/mcp/mcp.json`](agent-instructions/mcp/mcp.json) into
 the client configuration (or use `npx -y burndrop mcp` as the command) and
 add the rules from [`agent-instructions/`](agent-instructions/) to your
