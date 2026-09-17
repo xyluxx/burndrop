@@ -3,6 +3,7 @@ package relay
 import (
 	"bytes"
 	"context"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -505,6 +506,24 @@ func TestCORS(t *testing.T) {
 	if res.Status != http.StatusForbidden || res.str("error") != "origin_not_allowed" {
 		t.Fatalf("evil origin post: %d %s", res.Status, res.Raw)
 	}
+	// The bundled page of the browser extension runs on an extension origin
+	// that cannot be listed in advance; it is admitted and echoed back.
+	for _, ext := range []string{"chrome-extension://abcdefghijklmnopabcdefghijklmnop", "moz-extension://0f4a7b3c-2d9e-4f1a-8b6c-5d2e3f4a5b6c"} {
+		res = ts.post("/api/v1/drops/status", map[string]any{"drop_id": d.ID}, withOrigin(ext))
+		if res.Status != 200 || res.Header.Get("Access-Control-Allow-Origin") != ext {
+			t.Fatalf("extension origin %s: %d %v", ext, res.Status, res.Header)
+		}
+		res = ts.do(http.MethodOptions, "/api/v1/drops/status", nil, withOrigin(ext), withHeader("Access-Control-Request-Method", "POST"))
+		if res.Status != http.StatusNoContent || res.Header.Get("Access-Control-Allow-Origin") != ext {
+			t.Fatalf("extension preflight %s: %d %v", ext, res.Status, res.Header)
+		}
+	}
+	for _, bad := range []string{"chrome-extension://", "chrome-extension://abc/def", "chrome-extension://ABC DEF", "moz-extension://" + strings.Repeat("a", 65), "https://chrome-extension.example", "chrome-extension:abc"} {
+		res = ts.post("/api/v1/drops/status", map[string]any{"drop_id": d.ID}, withOrigin(bad))
+		if res.Status != http.StatusForbidden {
+			t.Fatalf("malformed extension origin %q accepted: %d", bad, res.Status)
+		}
+	}
 }
 
 func TestSecurityHeadersAndPage(t *testing.T) {
@@ -582,4 +601,39 @@ func TestPanicRecovery(t *testing.T) {
 	if !strings.Contains(ts.logText(), `"panic":"boom"`) {
 		t.Fatal("panic not logged")
 	}
+}
+
+func TestAnonymousAgentsAreMeteredPerAddress(t *testing.T) {
+	ts := newTestServer(t, func(c *Config) {
+		c.AgentAuth = "off"
+		c.AgentKeys = nil
+		c.RateAgentPerMin = 3
+		c.TrustedProxies = mustCIDRs("127.0.0.1/32", "::1/128")
+	})
+	fx := newSealedFixture(t, "s")
+	body := map[string]any{"commitment": fx.commitment}
+	from := func(addr string) reqOption { return withHeader("X-Forwarded-For", addr) }
+	limited := false
+	for i := 0; i < 5; i++ {
+		if res := ts.post("/api/v1/drops", body, from("198.51.100.7")); res.Status == http.StatusTooManyRequests {
+			limited = true
+			break
+		}
+	}
+	if !limited {
+		t.Fatal("anonymous agent calls are not rate limited")
+	}
+	// Another address has its own bucket: one open relay client cannot lock
+	// out the others.
+	if res := ts.post("/api/v1/drops", body, from("198.51.100.8")); res.Status != http.StatusCreated {
+		t.Fatalf("a different address shares the anonymous bucket: %d %s", res.Status, res.Raw)
+	}
+}
+
+func mustCIDRs(cidrs ...string) []*net.IPNet {
+	nets, err := parseCIDRs(strings.Join(cidrs, ","))
+	if err != nil {
+		panic(err)
+	}
+	return nets
 }

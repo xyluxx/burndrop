@@ -68,7 +68,7 @@ func (s *Server) createDrop(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusUnauthorized, "unauthorized", nil)
 		return
 	}
-	if !s.limitAgent(w, keyID) {
+	if !s.limitAgent(w, r, keyID) {
 		return
 	}
 	var req createDropRequest
@@ -132,7 +132,7 @@ func (s *Server) fetch(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusUnauthorized, "unauthorized", nil)
 		return
 	}
-	if !s.limitAgent(w, keyID) {
+	if !s.limitAgent(w, r, keyID) {
 		return
 	}
 	var req fetchRequest
@@ -158,7 +158,7 @@ func (s *Server) createReveal(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusUnauthorized, "unauthorized", nil)
 		return
 	}
-	if !s.limitAgent(w, keyID) {
+	if !s.limitAgent(w, r, keyID) {
 		return
 	}
 	var req createRevealRequest

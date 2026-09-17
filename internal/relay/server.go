@@ -207,17 +207,53 @@ func (s *Server) cors(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	w.Header().Add("Vary", "Origin")
+	allow := func(allowed string) bool {
+		h := w.Header()
+		h.Set("Access-Control-Allow-Origin", allowed)
+		h.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		h.Set("Access-Control-Allow-Headers", "Content-Type, "+ClientHeader+", Authorization")
+		h.Set("Access-Control-Max-Age", "600")
+		return true
+	}
 	for _, allowed := range s.cfg.PageOrigins {
 		if strings.EqualFold(origin, allowed) {
-			h := w.Header()
-			h.Set("Access-Control-Allow-Origin", allowed)
-			h.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-			h.Set("Access-Control-Allow-Headers", "Content-Type, "+ClientHeader+", Authorization")
-			h.Set("Access-Control-Max-Age", "600")
-			return true
+			return allow(allowed)
 		}
 	}
+	// The browser extension serves its own copy of the page from an
+	// extension origin, whose identifier differs per browser and, in
+	// Firefox, per installation, so it cannot be listed in advance. The
+	// origin list keeps foreign web pages out; it is not an authentication
+	// boundary (requests without an Origin header are served as usual), so
+	// admitting extension pages loses nothing.
+	if isExtensionOrigin(origin) {
+		return allow(origin)
+	}
 	return false
+}
+
+// isExtensionOrigin reports whether origin is a Chrome or Firefox extension
+// page: a scheme followed by one path-free identifier.
+func isExtensionOrigin(origin string) bool {
+	lower := strings.ToLower(origin)
+	var id string
+	switch {
+	case strings.HasPrefix(lower, "chrome-extension://"):
+		id = lower[len("chrome-extension://"):]
+	case strings.HasPrefix(lower, "moz-extension://"):
+		id = lower[len("moz-extension://"):]
+	default:
+		return false
+	}
+	if id == "" || len(id) > 64 {
+		return false
+	}
+	for _, c := range id {
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Server) preflight(w http.ResponseWriter, _ *http.Request) {
@@ -345,8 +381,15 @@ func (s *Server) limitPage(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (s *Server) limitAgent(w http.ResponseWriter, keyID string) bool {
-	if !s.agentLim.Allow(keyID) {
+// limitAgent meters agent calls per key. Without agent auth there is no key
+// to meter, so anonymous callers are metered per client address; the address
+// serves only as a bucket name and is neither stored nor logged.
+func (s *Server) limitAgent(w http.ResponseWriter, r *http.Request, keyID string) bool {
+	bucket := keyID
+	if keyID == anonymousAgent {
+		bucket = "addr:" + ClientIP(r, s.cfg.TrustedProxies)
+	}
+	if !s.agentLim.Allow(bucket) {
 		w.Header().Set("Retry-After", "10")
 		s.writeError(w, http.StatusTooManyRequests, "rate_limited", nil)
 		return false
