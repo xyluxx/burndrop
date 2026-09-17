@@ -33,8 +33,8 @@ flowchart LR
         H[Human]
         B[Browser: drop page, extension, or CLI]
     end
-    subgraph Channel["Chat channel"]
-        C[Chat client, logs, notifications, link scanners]
+    subgraph Channel["Delivery channel (chat, email, messaging, tickets)"]
+        C[Client, logs, notifications, link scanners]
     end
     subgraph AgentSide["Agent side"]
         M[Language model]
@@ -65,7 +65,7 @@ Trust boundaries, from most to least trusted:
 | CLI and extension | Trusted code the human installed once and can verify. |
 | Drop page (hosted) | Trusted only at the moment of use. The weakest of the three ways to open a drop. Verifiable by published hash. |
 | Relay | **Not trusted with plaintext, keys, or metadata.** Trusted only for availability. |
-| Chat channel | **Not trusted.** May be logged, scanned, previewed, forwarded, and read by admins or attackers. |
+| Delivery channel (the chat where the agent runs, email, Telegram, Slack, a ticket system, any text channel the agent uses with its human) | **Not trusted.** May be logged, scanned, previewed, forwarded, and read by admins or attackers. burndrop never sends a link itself; the agent chooses where to put it, which is why misdelivery is a T20 scenario. |
 | Network and DNS | **Not trusted.** TLS is defense in depth, not the security boundary. |
 
 The design principle that follows: the only thing that must be honest for confidentiality to hold is the code that runs at the two ends (the human's client and the agent runtime). Everything between them can be hostile.
@@ -346,7 +346,7 @@ This threat is specific to agents and is the most important one on the agent sid
 
 ### T20. Human error
 
-**Scenarios and mitigations.** Link sent to the wrong person: one-time delivery makes the mistake visible, the agent can revoke (`revoke_request`, `burndrop revoke`) and the relay accepts either token, TTL is short. Wrong secret pasted: revoke before the agent fetches; the agent confirms only the reference name, never the value. Secret pasted into chat: the agent instruction file requires the agent to say it is exposed, recommend rotation, and offer a drop link.
+**Scenarios and mitigations.** Link sent to the wrong person or posted somewhere shared, by the human or, more likely, by the agent, since the model chooses the channel: the instructions tell the model on every call, through rule 2 and the `delivery` field of every `request_secret` and `send_secret` result, to hand a link only to the human it works for, over the channel they already use, and never to a group, ticket, file, commit, log, or web page. One-time delivery makes the mistake visible; `revoke_request` and `burndrop revoke` cancel both request links and unopened reveal links (the agent keeps every revoke token until the link expires) and report whether someone got there first; TTLs are short; a reveal password makes a stray reveal link useless. burndrop cannot make misdelivery impossible, because the agent's output channel is outside the system. The residual risk is a link read by the wrong person before revocation: for a drop link that means a wrong upload the human notices, for a reveal link an exposed value the agent must report (rule 7). Wrong secret pasted: revoke before the agent fetches; the agent confirms only the reference name, never the value. Secret pasted into chat: the agent instruction file requires the agent to say it is exposed, recommend rotation, and offer a drop link.
 
 ## 7. Ways to open a drop, ranked by trust
 
@@ -400,4 +400,5 @@ Properties not claimed: protection from a compromised endpoint, hiding that an e
 | T16 | `internal/relay/handlers_test.go`: TestExpiry, TestTTLClamp; `web/e2e/page.spec.ts`: shows expired and revoked links |
 | T17 | `internal/link/fuzz_test.go`, `internal/crypto/fuzz_test.go`, `internal/relay/fuzz_test.go` |
 | T18 | `internal/relay/handlers_test.go`: TestStoreFull, TestRateLimits, TestLongPoll, TestRequestValidation |
+| T20 | `internal/agent/agent_test.go`: TestRevokeSent (delivery note, revoking a sent link in time and too late); `internal/mcpserver/server_test.go`: TestFullFlow and TestSendWithoutElicitation (delivery note, revoke_request on a sent link), TestToolList (rule 2 in the instructions); `cmd/burndrop/reveal_password_test.go` (revoking a sent link) |
 | T19 | `internal/relay/handlers_test.go`: TestSecurityHeadersAndPage, TestCORS; `web/e2e/page.spec.ts`: values are shown through text nodes and the page states render as expected |

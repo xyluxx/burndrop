@@ -169,7 +169,7 @@ func TestToolList(t *testing.T) {
 			t.Fatalf("%s: schema mentions a value field: %s", tool.Name, schema)
 		}
 	}
-	if params := f.session.InitializeResult(); params == nil || !strings.Contains(params.Instructions, "Never ask a human to paste a secret") {
+	if params := f.session.InitializeResult(); params == nil || !strings.Contains(params.Instructions, "Never ask a human to paste a secret") || !strings.Contains(params.Instructions, "only to the human you are working for") {
 		t.Fatal("instructions not sent")
 	}
 }
@@ -188,6 +188,9 @@ func TestFullFlow(t *testing.T) {
 	msg, _ := out["message"].(string)
 	if reqID == "" || !strings.Contains(url, "/drop#") || !strings.Contains(msg, url) || !strings.Contains(msg, out["fingerprint"].(string)) {
 		t.Fatalf("request output: %+v", out)
+	}
+	if note, _ := out["delivery"].(string); !strings.Contains(note, "only to the human you are working for") {
+		t.Fatalf("delivery note: %+v", out)
 	}
 	// Validation errors are tool errors, not protocol errors.
 	res, _ = f.call(t, "request_secret", map[string]any{"name": "bad name!", "purpose": "p"})
@@ -319,6 +322,14 @@ func TestSendWithoutElicitation(t *testing.T) {
 		t.Fatalf("send without elicitation: %s %+v", errText(res), out)
 	}
 	f.assertNoLeak(t, "generated-value-1")
+	if note, _ := out["delivery"].(string); !strings.Contains(note, "only to the human you are working for") {
+		t.Fatalf("delivery note: %+v", out)
+	}
+	// A sent link can be revoked with its request_id until it is opened.
+	res, out = f.call(t, "revoke_request", map[string]any{"request_id": out["request_id"]})
+	if res.IsError || out["state"] != "revoked" {
+		t.Fatalf("revoke sent link: %s %+v", errText(res), out)
+	}
 	// Disabled confirmation skips elicitation even when supported.
 	off := false
 	s := New(f.agent, Options{ConfirmSend: &off})

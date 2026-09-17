@@ -75,8 +75,19 @@ func TestRevealPassword(t *testing.T) {
 	}
 	c.mustRun("reveal-password", "on")
 	out = c.mustRun("send", "gen", "-yes", "-json")
-	if !strings.Contains(out, "&s=") {
+	if !strings.Contains(out, "&s=") || !strings.Contains(out, "only to the human you are working for") {
 		t.Fatalf("send after on: %s", out)
+	}
+	if err := json.Unmarshal([]byte(out), &sent); err != nil {
+		t.Fatal(err)
+	}
+	// A sent link is revocable by its id until it is opened.
+	id, _ := sent["request_id"].(string)
+	if out := c.mustRun("revoke", id); !strings.Contains(out, "is now revoked") {
+		t.Fatalf("revoke sent link: %s", out)
+	}
+	if code, _, errOut := c.run("open", sent["link"].(string), "-yes"); code != 1 || !strings.Contains(errOut, "already used or revoked") {
+		t.Fatalf("open revoked link: %d %s", code, errOut)
 	}
 	out = c.mustRun("reveal-password", "clear")
 	if !strings.Contains(out, "not set") {

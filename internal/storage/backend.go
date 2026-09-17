@@ -84,6 +84,9 @@ type Metadata struct {
 const (
 	KindSecret  = ""
 	KindPending = "pending"
+	// KindSent marks the record of an unopened reveal link: its revoke token
+	// and expiry, never the key or the value.
+	KindSent = "sent"
 )
 
 // Expired reports whether the entry has passed its expiry.

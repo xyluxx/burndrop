@@ -42,7 +42,7 @@ func New(a *agent.Agent, opts Options) *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "request_secret",
 		Title:       "Request a secret from a human",
-		Description: "Create a one-time link the human opens to submit a secret. The value is encrypted in their browser to a key only this agent holds and is stored by name; it is never returned to you. Relay the returned message verbatim.",
+		Description: "Create a one-time link the human opens to submit a secret. The value is encrypted in their browser to a key only this agent holds and is stored by name; it is never returned to you. Relay the returned message verbatim, and only to the human you are working for, over the channel you already use with them; never anywhere shared.",
 		Annotations: &mcp.ToolAnnotations{Title: "Request a secret", ReadOnlyHint: false, DestructiveHint: boolPtr(false), OpenWorldHint: boolPtr(true)},
 	}, h.requestSecret)
 
@@ -56,7 +56,7 @@ func New(a *agent.Agent, opts Options) *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "send_secret",
 		Title:       "Send a secret to a human",
-		Description: "Create a one-time link that reveals a stored secret to a human once. Only secrets marked sendable can be sent. The human may be asked to confirm first. When the human has turned on their reveal password, the page asks for it before showing the value. Relay the returned message verbatim.",
+		Description: "Create a one-time link that reveals a stored secret to a human once. Only secrets marked sendable can be sent. The human may be asked to confirm first. When the human has turned on their reveal password, the page asks for it before showing the value. Relay the returned message verbatim, and only to the human you are working for, over the channel you already use with them; never anywhere shared.",
 		Annotations: &mcp.ToolAnnotations{Title: "Send a secret", DestructiveHint: boolPtr(true), OpenWorldHint: boolPtr(true)},
 	}, h.sendSecret)
 
@@ -83,9 +83,9 @@ func New(a *agent.Agent, opts Options) *mcp.Server {
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "revoke_request",
-		Title:       "Revoke a pending request",
-		Description: "Cancel a request whose link should no longer work, for example when the human reports a fingerprint mismatch. Returns the request's final state.",
-		Annotations: &mcp.ToolAnnotations{Title: "Revoke a request", DestructiveHint: boolPtr(true), IdempotentHint: true, OpenWorldHint: boolPtr(true)},
+		Title:       "Revoke a link",
+		Description: "Cancel a request link or an unopened reveal link that should no longer work, for example when the human reports a fingerprint mismatch or a link reached the wrong person. Takes the request_id returned by request_secret or send_secret and returns the final state: revoked, or fetched, opened, or expired when it was too late.",
+		Annotations: &mcp.ToolAnnotations{Title: "Revoke a link", DestructiveHint: boolPtr(true), IdempotentHint: true, OpenWorldHint: boolPtr(true)},
 	}, h.revokeRequest)
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -304,7 +304,7 @@ func (h *handlers) deleteSecret(ctx context.Context, _ *mcp.CallToolRequest, in 
 
 // RevokeInput is the revoke_request input.
 type RevokeInput struct {
-	RequestID string `json:"request_id" jsonschema:"the request_id returned by request_secret"`
+	RequestID string `json:"request_id" jsonschema:"the request_id returned by request_secret or send_secret"`
 }
 
 // RevokeOutput is the revoke_request output.

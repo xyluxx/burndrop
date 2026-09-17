@@ -26,6 +26,12 @@ Keep a Changelog, and the project uses Semantic Versioning.
   section 4.1). The `reveal_password` MCP tool turns the requirement on or
   off from the conversation; the password itself never passes through the
   chat. The page, the CLI, both SDKs, and the interop files support it.
+- Delivery guidance: instruction rule 2 and a `delivery` field on every
+  `request_secret` and `send_secret` result tell the model, on every call,
+  to hand a link only to the human it works for, over whatever channel they
+  already use, and never anywhere shared. `revoke_request` and
+  `burndrop revoke` also cancel an unopened reveal link; the agent keeps
+  the revoke token of every sent link until it expires.
 - Twelve storage backends: OS keychain, age vault, `.env` file, memory,
   1Password, Bitwarden, HashiCorp Vault, Infisical, Doppler, AWS Secrets
   Manager, Google Secret Manager, and Azure Key Vault.

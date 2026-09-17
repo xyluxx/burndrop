@@ -80,7 +80,7 @@ burndrop request -name NAME -purpose TEXT [-retention POLICY] [-ttl DURATION] [-
 | `-retention` | `session`, `until-revoked`, or `until:<RFC 3339 date>`; default from the config (`until-revoked`) |
 | `-ttl` | Link lifetime such as `30m` or `2h`; default from the config (`1h`); the relay clamps it to its maximum |
 | `-sendable` | Allow the secret to be sent back to a human later with `send` |
-| `-json` | Print `request_id`, `link`, `fingerprint`, `expires_at`, `storage`, `retention`, `message` |
+| `-json` | Print `request_id`, `link`, `fingerprint`, `expires_at`, `storage`, `retention`, `message`, `delivery` (the reminder that the link goes only to the human the agent works for) |
 
 Prints the ready-to-send message (link, purpose, storage, retention, expiry, fingerprint), a blank line, and `request id: <id>`. Exit 2 when `-name` or `-purpose` is missing; exit 1 on validation errors such as `ttl "abc" is not a positive duration such as 30m or 2h` or `storage: invalid retention policy: date is in the past`, and on relay errors such as `relay: unauthorized [HTTP 401]`.
 
@@ -90,7 +90,7 @@ Prints the ready-to-send message (link, purpose, storage, retention, expiry, fin
 burndrop fetch [REQUEST_ID] [-wait SECONDS] [-json]
 ```
 
-`REQUEST_ID` may be omitted when exactly one request is pending; otherwise `error: no pending request with that id` or `error: more than one request is pending; pass request_id`. `-wait` is the number of seconds to wait for the submission (default 30; `0` also means 30; values above 300 are clamped to 300). Prints `<status>: <message>`. With status `waiting` the command exits 1 with `error: still waiting; run fetch again`. Other statuses (`stored`, `expired`, `revoked`, `gone`, `rejected`) exit 0; see [agent-integration.md](agent-integration.md) for their meaning. `-json` prints `status`, `request_id`, `name`, `storage`, `retention`, `fingerprint`, `size_bytes`, `expires_at`, `message`.
+`REQUEST_ID` may be omitted when exactly one request is pending; otherwise `error: no pending request or unopened reveal with that id` or `error: more than one request is pending; pass request_id`. `-wait` is the number of seconds to wait for the submission (default 30; `0` also means 30; values above 300 are clamped to 300). Prints `<status>: <message>`. With status `waiting` the command exits 1 with `error: still waiting; run fetch again`. Other statuses (`stored`, `expired`, `revoked`, `gone`, `rejected`) exit 0; see [agent-integration.md](agent-integration.md) for their meaning. `-json` prints `status`, `request_id`, `name`, `storage`, `retention`, `fingerprint`, `size_bytes`, `expires_at`, `message`.
 
 ### send
 
@@ -98,7 +98,7 @@ burndrop fetch [REQUEST_ID] [-wait SECONDS] [-json]
 burndrop send NAME [-ttl DURATION] [-delete-after] [-yes] [-json]
 ```
 
-Checks that `NAME` exists and is marked sendable before asking `Create a one-time link that reveals "NAME" to whoever opens it? [y/N]`, then creates the reveal and prints the message for the human. `-delete-after` deletes the agent's copy once the link exists (the message then says `I have deleted my copy of it.`). Errors: `this secret was received from a human and is not marked sendable; only secrets created by the agent or marked sendable by the operator can be sent`; `storage: secret not found`; `cancelled`. `-json` prints `request_id`, `link`, `expires_at`, `keeps_copy`, `password_protected`, `message`. With the reveal password turned on (`reveal-password`), the link carries a salt, `password_protected` is true, and the message adds `The page asks for your reveal password before it shows the value.`; with the requirement on and no password stored, the command fails with `reveal links must carry a password but none is set; the human runs: burndrop reveal-password set`.
+Checks that `NAME` exists and is marked sendable before asking `Create a one-time link that reveals "NAME" to whoever opens it? [y/N]`, then creates the reveal and prints the message for the human. `-delete-after` deletes the agent's copy once the link exists (the message then says `I have deleted my copy of it.`). Errors: `this secret was received from a human and is not marked sendable; only secrets created by the agent or marked sendable by the operator can be sent`; `storage: secret not found`; `cancelled`. `-json` prints `request_id`, `link`, `expires_at`, `keeps_copy`, `password_protected`, `message`, `delivery`. With the reveal password turned on (`reveal-password`), the link carries a salt, `password_protected` is true, and the message adds `The page asks for your reveal password before it shows the value.`; with the requirement on and no password stored, the command fails with `reveal links must carry a password but none is set; the human runs: burndrop reveal-password set`.
 
 ### run
 
@@ -148,7 +148,7 @@ Prints `REQUEST ID NAME FINGERPRINT RETENTION EXPIRES` for outstanding requests,
 burndrop revoke REQUEST_ID
 ```
 
-Cancels the request on the relay and forgets it locally. Prints `request <id> is now <state>`: `revoked` normally, the relay's terminal state when it was already `fetched` or `expired`, or `expired` when the relay no longer knows the id. Error: `no pending request with that id`.
+Cancels a request, or an unopened reveal created by `send`, on the relay and forgets it locally; `REQUEST_ID` is the id printed by `request` or `send`. Prints `request <id> is now <state>`: `revoked` normally, the relay's terminal state when it was already `fetched`, `opened`, or `expired`, or `expired` when the relay no longer knows the id. Error: `no pending request or unopened reveal with that id`.
 
 ### audit
 

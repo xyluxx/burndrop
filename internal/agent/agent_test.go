@@ -522,3 +522,77 @@ func TestSplitOriginLinks(t *testing.T) {
 		t.Fatalf("split origin reveal: %v %q %+v", err, origin, rv)
 	}
 }
+
+func TestRevokeSent(t *testing.T) {
+	ctx := context.Background()
+	h := newHarness(t)
+	a := h.agent
+	if _, err := a.Store.Put(ctx, "gen", []byte("generated-value-9"), storage.Metadata{Retention: storage.RetentionUntilRevoked, Source: storage.SourceCapture, Sendable: true}); err != nil {
+		t.Fatal(err)
+	}
+	out, err := a.Send(ctx, SendInput{Name: "gen"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.Delivery, "only to the human you are working for") {
+		t.Fatalf("delivery note: %q", out.Delivery)
+	}
+	// The bookkeeping record is hidden and cannot be sent or deleted by name.
+	list, err := a.List(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range list {
+		if strings.HasPrefix(m.Name, sentPrefix) {
+			t.Fatal("sent record listed as a secret")
+		}
+	}
+	if p, _ := a.Pending(ctx); len(p) != 0 {
+		t.Fatalf("pending lists sent records: %+v", p)
+	}
+	if err := a.CanSend(ctx, sentName(out.RequestID)); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatalf("can send sent record: %v", err)
+	}
+	if err := a.Delete(ctx, sentName(out.RequestID)); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatalf("delete sent record: %v", err)
+	}
+	// Revoked in time: the link no longer opens and the record is gone.
+	state, err := a.Revoke(ctx, out.RequestID)
+	if err != nil || state != client.StateRevoked {
+		t.Fatalf("revoke sent link: %s %v", state, err)
+	}
+	r, _, err := link.ParseReveal(out.Link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := h.relay.Open(ctx, r.ID, r.RevealToken); err == nil {
+		t.Fatal("a revoked reveal still opens")
+	}
+	if _, err := a.Revoke(ctx, out.RequestID); !errors.Is(err, ErrNoPending) {
+		t.Fatalf("second revoke: %v", err)
+	}
+	// Opened first: the state tells the agent that the value is out.
+	out2, err := a.Send(ctx, SendInput{Name: "gen"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r2, _, err := link.ParseReveal(out2.Link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := h.relay.Open(ctx, r2.ID, r2.RevealToken); err != nil {
+		t.Fatal(err)
+	}
+	state, err = a.Revoke(ctx, out2.RequestID)
+	if err != nil || state != client.StateOpened {
+		t.Fatalf("revoke after open: %s %v", state, err)
+	}
+	// Requests carry the same note.
+	req, err := a.Request(ctx, RequestInput{Name: "x", Purpose: "p"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(req.Delivery, "only to the human you are working for") {
+		t.Fatalf("request delivery note: %q", req.Delivery)
+	}
+}

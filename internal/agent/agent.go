@@ -47,7 +47,7 @@ func New(cfg Config, relay *client.Client, store *storage.Manager, audit *Audit)
 // Errors the tools translate into messages.
 var (
 	ErrNotSendable = errors.New("this secret was received from a human and is not marked sendable; only secrets created by the agent or marked sendable by the operator can be sent")
-	ErrNoPending   = errors.New("no pending request with that id")
+	ErrNoPending   = errors.New("no pending request or unopened reveal with that id")
 	ErrAmbiguous   = errors.New("more than one request is pending; pass request_id")
 	ErrNotAllowed  = errors.New("command is not in run_with_secret.allowed_commands")
 	// ErrNoRevealPassword is returned when reveals must be password
@@ -80,6 +80,39 @@ const pendingPrefix = "pending."
 
 func pendingName(dropID string) string { return pendingPrefix + dropID }
 
+// sentRecord remembers an unopened reveal so that a revoke can cancel it.
+// It holds the revoke token and display facts, never the key or the value,
+// and expires with the link.
+type sentRecord struct {
+	V           int       `json:"v"`
+	DropID      string    `json:"drop_id"`
+	RevokeToken string    `json:"revoke_token"`
+	Name        string    `json:"name"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExpiresAt   time.Time `json:"expires_at"`
+}
+
+const sentPrefix = "sent."
+
+func sentName(dropID string) string { return sentPrefix + dropID }
+
+// isInternalName reports whether a storage name belongs to a bookkeeping
+// record (a pending request or a sent reveal) rather than to a secret.
+func isInternalName(name string) bool {
+	return strings.HasPrefix(name, pendingPrefix) || strings.HasPrefix(name, sentPrefix)
+}
+
+// isInternalKind is the metadata form of isInternalName.
+func isInternalKind(kind string) bool {
+	return kind == storage.KindPending || kind == storage.KindSent
+}
+
+// DeliveryNote travels with every link so that the model is reminded, on
+// every call and not only in the instruction file, who may receive it. The
+// link may travel over any channel; it must reach only the human the agent
+// works for.
+const DeliveryNote = "Deliver this only to the human you are working for, through the channel you already use with them (this chat, or their email, Telegram, Slack, or wherever they read you). Any channel can carry the link, but it must reach only that person: never a group, ticket, file, commit, log, or web page, and never anyone else. If it reached the wrong person, revoke it at once with this request_id (revoke_request, or burndrop revoke)."
+
 // RequestInput is the request_secret input.
 type RequestInput struct {
 	Name      string `json:"name" jsonschema:"reference name for the secret, for example openai-api-key; letters, digits, dot, underscore, dash"`
@@ -98,6 +131,7 @@ type RequestOutput struct {
 	Storage     string    `json:"storage"`
 	Retention   string    `json:"retention"`
 	Message     string    `json:"message"`
+	Delivery    string    `json:"delivery"`
 }
 
 // Request creates a drop slot and returns a link for the human.
@@ -156,6 +190,7 @@ func (a *Agent) Request(ctx context.Context, in RequestInput) (RequestOutput, er
 	a.log(Event{Event: "request_secret", Name: in.Name, DropID: created.ID, Result: "created", Fields: map[string]string{"fingerprint": fingerprint, "retention": retention, "storage": storageName, "expires_at": created.ExpiresAt.UTC().Format(time.RFC3339)}})
 	out := RequestOutput{RequestID: created.ID, Link: url, Fingerprint: fingerprint, ExpiresAt: created.ExpiresAt.UTC(), Storage: storageName, Retention: retention}
 	out.Message = requestMessage(out, in)
+	out.Delivery = DeliveryNote
 	return out, nil
 }
 
@@ -205,6 +240,42 @@ func (a *Agent) loadPending(ctx context.Context, dropID string) (pendingRecord, 
 
 func (a *Agent) deletePending(ctx context.Context, dropID string) {
 	_ = a.Store.Delete(ctx, pendingName(dropID))
+}
+
+func (a *Agent) saveSent(ctx context.Context, rec sentRecord) error {
+	b, err := json.Marshal(rec)
+	if err != nil {
+		return err
+	}
+	retention := storage.RetentionUntilPrefix + rec.ExpiresAt.Format(time.RFC3339)
+	if !rec.ExpiresAt.After(a.Now().Add(time.Second)) {
+		retention = storage.RetentionSession
+	}
+	_, err = a.Store.Put(ctx, sentName(rec.DropID), b, storage.Metadata{Retention: retention, Source: storage.SourceCapture, Kind: storage.KindSent})
+	return err
+}
+
+func (a *Agent) loadSent(ctx context.Context, dropID string) (sentRecord, error) {
+	if !crypto.ValidToken(dropID) {
+		return sentRecord{}, fmt.Errorf("%w: malformed request id", ErrNoPending)
+	}
+	b, _, err := a.Store.Get(ctx, sentName(dropID))
+	if errors.Is(err, storage.ErrNotFound) {
+		return sentRecord{}, ErrNoPending
+	}
+	if err != nil {
+		return sentRecord{}, err
+	}
+	defer storage.Zero(b)
+	var rec sentRecord
+	if err := json.Unmarshal(b, &rec); err != nil || rec.V != 1 {
+		return sentRecord{}, errors.New("sent reveal record is corrupt")
+	}
+	return rec, nil
+}
+
+func (a *Agent) deleteSent(ctx context.Context, dropID string) {
+	_ = a.Store.Delete(ctx, sentName(dropID))
 }
 
 // PendingRequest describes an outstanding request without its keys.
@@ -442,6 +513,7 @@ type SendOutput struct {
 	KeepsCopy         bool      `json:"keeps_copy"`
 	PasswordProtected bool      `json:"password_protected"`
 	Message           string    `json:"message"`
+	Delivery          string    `json:"delivery"`
 }
 
 // CanSend reports whether a stored secret exists and is marked sendable,
@@ -455,7 +527,7 @@ func (a *Agent) CanSend(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	if meta.Kind == storage.KindPending {
+	if isInternalKind(meta.Kind) {
 		return storage.ErrNotFound
 	}
 	if !meta.Sendable {
@@ -540,6 +612,12 @@ func (a *Agent) Send(ctx context.Context, in SendInput) (SendOutput, error) {
 		_ = a.Relay.RevokeReveal(ctx, created.ID, created.RevokeToken)
 		return SendOutput{}, err
 	}
+	// The revoke token is kept until the link expires, so a link that went
+	// to the wrong place can still be cancelled.
+	if err := a.saveSent(ctx, sentRecord{V: 1, DropID: created.ID, RevokeToken: created.RevokeToken, Name: in.Name, CreatedAt: a.Now().UTC(), ExpiresAt: created.ExpiresAt.UTC()}); err != nil {
+		_ = a.Relay.RevokeReveal(ctx, created.ID, created.RevokeToken)
+		return SendOutput{}, fmt.Errorf("could not save the sent record: %w", err)
+	}
 	if in.DeleteAfter {
 		if err := a.Store.Delete(ctx, in.Name); err != nil {
 			keepsCopy = true
@@ -548,6 +626,7 @@ func (a *Agent) Send(ctx context.Context, in SendInput) (SendOutput, error) {
 	a.log(Event{Event: "send_secret", Name: in.Name, DropID: created.ID, Result: "created", Fields: map[string]string{"keeps_copy": fmt.Sprint(keepsCopy), "expires_at": created.ExpiresAt.UTC().Format(time.RFC3339), "password": fmt.Sprint(salt != nil)}})
 	out := SendOutput{RequestID: created.ID, Link: url, ExpiresAt: created.ExpiresAt.UTC(), KeepsCopy: keepsCopy, PasswordProtected: salt != nil}
 	out.Message = sendMessage(out, in.Name)
+	out.Delivery = DeliveryNote
 	return out, nil
 }
 
@@ -559,7 +638,7 @@ func (a *Agent) List(ctx context.Context) ([]storage.Metadata, error) {
 	}
 	out := make([]storage.Metadata, 0, len(all))
 	for _, m := range all {
-		if m.Kind == storage.KindPending {
+		if isInternalKind(m.Kind) {
 			continue
 		}
 		out = append(out, m)
@@ -572,7 +651,7 @@ func (a *Agent) Delete(ctx context.Context, name string) error {
 	if err := storage.ValidateName(name); err != nil {
 		return err
 	}
-	if strings.HasPrefix(name, pendingPrefix) {
+	if isInternalName(name) {
 		return storage.ErrNotFound
 	}
 	err := a.Store.Delete(ctx, name)
@@ -585,28 +664,58 @@ func (a *Agent) Delete(ctx context.Context, name string) error {
 	return err
 }
 
-// Revoke cancels a pending request on the relay and forgets it locally.
+// Revoke cancels a pending request, or an unopened reveal created by Send,
+// on the relay and forgets it locally. The id is the request_id that
+// request_secret or send_secret returned. The returned state says whether
+// the revocation came in time (revoked) or what happened first (fetched,
+// opened, expired).
 func (a *Agent) Revoke(ctx context.Context, requestID string) (string, error) {
 	rec, err := a.loadPending(ctx, requestID)
+	if errors.Is(err, ErrNoPending) {
+		return a.revokeSent(ctx, requestID)
+	}
 	if err != nil {
 		return "", err
 	}
 	storage.Zero(rec.PrivateKey)
-	err = a.Relay.RevokeDrop(ctx, rec.DropID, rec.UploadToken)
-	state := client.StateRevoked
-	var relayErr *client.Error
-	switch {
-	case err == nil:
-	case errors.As(err, &relayErr) && relayErr.State != "":
-		state = relayErr.State
-	case client.IsCode(err, client.CodeNotFound):
-		state = client.StateExpired
-	default:
+	state, err := revokeState(a.Relay.RevokeDrop(ctx, rec.DropID, rec.UploadToken))
+	if err != nil {
 		return "", err
 	}
 	a.deletePending(ctx, rec.DropID)
 	a.log(Event{Event: "revoke_request", Name: rec.Name, DropID: rec.DropID, Result: state})
 	return state, nil
+}
+
+func (a *Agent) revokeSent(ctx context.Context, dropID string) (string, error) {
+	rec, err := a.loadSent(ctx, dropID)
+	if err != nil {
+		return "", err
+	}
+	state, err := revokeState(a.Relay.RevokeReveal(ctx, rec.DropID, rec.RevokeToken))
+	if err != nil {
+		return "", err
+	}
+	a.deleteSent(ctx, rec.DropID)
+	a.log(Event{Event: "revoke_request", Name: rec.Name, DropID: rec.DropID, Result: state, Fields: map[string]string{"kind": "reveal"}})
+	return state, nil
+}
+
+// revokeState maps the relay's answer to a revoke into the slot's final
+// state: revoked when it came in time, the terminal state the relay reports
+// when it was too late, and expired when the relay no longer knows the id.
+func revokeState(err error) (string, error) {
+	var relayErr *client.Error
+	switch {
+	case err == nil:
+		return client.StateRevoked, nil
+	case errors.As(err, &relayErr) && relayErr.State != "":
+		return relayErr.State, nil
+	case client.IsCode(err, client.CodeNotFound):
+		return client.StateExpired, nil
+	default:
+		return "", err
+	}
 }
 
 // Load registers every stored session value with the redactor is not

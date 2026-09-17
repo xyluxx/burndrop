@@ -71,6 +71,13 @@ human through a link that opens once and never passes through the chat.
 
 ## How it works
 
+The link travels over whatever channel the agent already uses with its
+human: the chat where the agent runs, email, Telegram, Slack, a ticket, a
+terminal. No channel is trusted (the threat model assumes it is logged,
+scanned, previewed, and forwarded), so the only thing that must hold is
+that the link reaches that one person, and the agent is told so on every
+call. The diagrams say chat for short.
+
 Human to agent: the agent creates a per-request key pair, registers a
 commitment to the public key with the relay, and hands the human a link
 whose fragment carries the key and the display metadata.
@@ -306,6 +313,8 @@ Read the [threat model](docs/threat-model.md), the [crypto specification](docs/c
 **Can the relay operator read my secrets?** No. The relay receives ciphertext encrypted to a key it never sees. It learns sizes rounded to 256 bytes, timing, and client addresses.
 
 **What if someone intercepts the link?** They can upload a value in the human's place, which the human will notice when their own upload is refused, and they learn nothing about anything already sent. They cannot decrypt a reveal without clicking, and a click burns it, which the agent sees. With a reveal password turned on, the link is useless to them even after the click.
+
+**Which channel carries the link?** Any channel that carries text. burndrop never sends anything itself; the agent relays the message where it already talks to you. Every link it gets back comes with a `delivery` note, and rule 2 of the instructions says the same: only to the human you work for, never anywhere shared. If a link still lands in the wrong place, `revoke_request` cancels it, whether it is a request link or an unopened reveal link, and the returned state tells the agent whether someone got there first.
 
 **Can I require a password on top of the link?** Yes. Run `burndrop reveal-password set` once in a terminal; every reveal link then asks for that password before it shows the value. Ask the agent to turn the requirement off or on again at any time (the `reveal_password` tool); the password itself never passes through the chat.
 

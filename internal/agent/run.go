@@ -107,7 +107,7 @@ func (a *Agent) Run(ctx context.Context, in RunInput) (RunOutput, error) {
 		if err != nil {
 			return RunOutput{}, fmt.Errorf("secret %s: %w", secretName, err)
 		}
-		if meta.Kind == storage.KindPending {
+		if isInternalKind(meta.Kind) {
 			storage.Zero(value)
 			return RunOutput{}, fmt.Errorf("secret %s: %w", secretName, storage.ErrNotFound)
 		}
