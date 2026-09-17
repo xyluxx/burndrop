@@ -153,7 +153,7 @@ Environment injection. `env` maps variable names to secret names; each secret is
 {"command":["aws","sts","get-caller-identity"],"env":{"AWS_ACCESS_KEY_ID":"aws-key-id","AWS_SECRET_ACCESS_KEY":"aws-secret"}}
 ```
 
-Capturing a credential the command creates. With `capture_as`, stdout is not returned at all; it becomes a new secret (trimmed, at most 64 KiB) that is `sendable` and has `source` `capture`. `pattern` is a regular expression with exactly one capture group applied to stdout; when nothing matches the tool returns `The command ran but nothing matched capture_as.pattern; nothing was stored.` and no error. The typical flow is capture, then `send_secret`, so the model never sees the value:
+Capturing a credential the command creates. With `capture_as`, stdout is not returned (stderr still is, redacted and truncated); it becomes a new secret (trimmed, at most 64 KiB) that is `sendable` and has `source` `capture`. `pattern` is a regular expression with exactly one capture group applied to stdout; when nothing matches the tool returns `The command ran but nothing matched capture_as.pattern; nothing was stored.` and no error. The typical flow is capture, then `send_secret`, so the model never sees the value:
 
 ```json
 {"command":["openssl","rand","-hex","32"],"capture_as":{"name":"webhook-signing-key","purpose":"Signing key for the billing webhook"}}

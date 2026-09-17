@@ -39,12 +39,13 @@ from the brief) and section 19 (questions), then the `README.md`.
 | `go test -race` over 11 packages | all pass; 85.9 percent of statements covered (relay 76, agent 88, storage 88, crypto 89, link 91, client 92, mcpserver 94, cmd/burndrop 83, cmd/burndrop-relay 82) |
 | Web: `tsc`, Vitest, build, Playwright (desktop light, desktop dark, mobile) | 83 unit tests at 99.8 percent statements; 42 scenarios pass; page 528 KB single file |
 | Extension: `tsc`, Vitest, build, Playwright with the extension loaded | 7 unit tests, 9 scenarios pass; both zips reproducible |
-| Python SDK: ruff, mypy strict, pytest | 267 pass |
+| Python SDK: ruff, mypy strict, pytest | 268 pass |
 | TypeScript SDK: build, Vitest | 203 pass |
 | npm wrapper | 3 pass (the fake binary receives the arguments and its exit code is passed through) |
 | Interop: each language generates, every language checks | 18 of 18 in Go, Python, and TypeScript |
 | Docker image | builds from the three-stage Dockerfile, 4.7 MB, `version`, `/healthz`, `/api/v1/info`, `/drop` all answer, runs read-only as non-root |
 | Hygiene | no em dash in the tree; no attribution text; all actions pinned; generated instructions current; no internal hostnames; no personal data; git log shows only the owner identity and no trailers |
+| Documentation review | two independent passes compared the README, the threat model, the crypto specification, the architecture document, the reference docs, and the instruction files with the code; every mismatch they found was fixed in the code or the text (see the notes in `PROGRESS.md`) |
 
 Not verified here, because it cannot be:
 
@@ -72,7 +73,7 @@ All of them are revertable. The full list with reasoning is in `docs/design.md` 
 
 ## Known gaps and small warts
 
-- A sent reveal cannot be revoked from the CLI or MCP after `send_secret` returns; the relay supports it, the agent does not expose it. Roadmap.
+- A sent reveal cannot be revoked from the CLI or MCP after `send_secret` returns, and the agent does not poll whether the link was opened; the relay supports both, the Go client has `WaitForOpen`, and no CLI or MCP surface uses them yet. Roadmap.
 - `Agent.LoadRedactions` and the `import` record source exist without callers; harmless.
 - The saved config writes `max_output_bytes = 0` under `[run_with_secret]` because the TOML encoder cannot omit an empty table; 0 means the default.
 - `/api/v1/info` field names, the ciphertext limit (65,840 bytes), and the rate limit burst (rate divided by three, plus one) differ slightly from the numbers in `docs/design.md`; the reference docs describe the code.

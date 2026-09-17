@@ -41,7 +41,8 @@ burndrop replaces the paste with a link. The agent asks for the secret and
 gets a one-time link; the human opens it, pastes the value into a page that
 encrypts it in the browser to a key that exists only for that request, and
 the agent stores the result where it belongs. The relay in the middle holds
-ciphertext for an hour at most and deletes it the moment it is fetched. The
+ciphertext for an hour by default, never beyond the operator's maximum, and
+deletes it the moment it is fetched. The
 model never sees the value: it sees a name, a fingerprint, and a status.
 
 The same machinery works in the other direction. When an agent generates a
@@ -53,7 +54,7 @@ human through a link that opens once and never passes through the chat.
 - **End to end encryption with libsodium.** Sealed boxes (X25519, XSalsa20-Poly1305) from human to agent, XChaCha20-Poly1305 from agent to human. One key per exchange, carried in the URL fragment, which browsers never send to servers. [Specification](docs/crypto-spec.md).
 - **A zero-knowledge relay.** Memory only, nothing on disk, POST-only API, atomic fetch and delete, hashed tokens, per-client and per-agent rate limits, no identifiers in URLs or logs. One static binary or a 5 MB container image.
 - **Substitution-proof links.** The human compares a fingerprint; the relay checks a commitment to the agent's key registered before the link existed. A swapped key has to beat both.
-- **Nothing for the model.** Seven MCP tools that return names, statuses, and links, never values. `run_with_secret` injects a value into a command and returns redacted output; `capture_as` stores a command's output as a new secret without returning it.
+- **Nothing for the model.** Seven MCP tools that return names, statuses, and links, never values. `run_with_secret` injects a value into a command and returns redacted output; `capture_as` stores a command's standard output as a new secret instead of returning it.
 - **Twelve storage backends.** OS keychain, an age-encrypted vault, 1Password, Bitwarden, HashiCorp Vault, Infisical, Doppler, AWS Secrets Manager, Google Secret Manager, Azure Key Vault, memory, and a git-ignored `.env` file, with retention policies and an audit log.
 - **Three ways to open a link.** The hosted page (one HTML file with a published hash and a strict CSP), the browser extension (a bundled copy of the page that never trusts the relay), or the CLI.
 - **Verifiable releases.** Signed with Sigstore, attested, with SBOMs; the page hash is published per release and `burndrop verify-page` checks any relay against it.
@@ -82,7 +83,7 @@ sequenceDiagram
     participant B as Browser
     M->>A: request_secret(name, purpose, retention)
     A->>A: key pair (pk, sk); commitment = SHA-256(pk)
-    A->>R: POST /drops {ttl, commitment} (bearer key)
+    A->>R: POST /api/v1/drops {ttl_seconds, commitment} (bearer key)
     R-->>A: drop_id, upload_token, fetch_token, expires_at
     A-->>M: link, fingerprint, expiry, message text
     M->>H: link + fingerprint + purpose + storage + retention
@@ -90,8 +91,8 @@ sequenceDiagram
     B->>B: read fragment, replaceState, show metadata and fingerprint
     H->>B: paste secret, click Encrypt and send
     B->>B: envelope, pad, crypto_box_seal(pk)
-    B->>R: POST /drops/upload {drop_id, upload_token, commitment, ciphertext}
-    A->>R: POST /drops/status (long poll), then POST /drops/fetch
+    B->>R: POST /api/v1/drops/upload {drop_id, upload_token, commitment, ciphertext}
+    A->>R: POST /api/v1/drops/status (long poll), then POST /api/v1/drops/fetch
     R-->>A: ciphertext, deleted atomically
     A->>A: open sealed box, verify metadata, store value, zero sk
     A-->>M: stored as name, storage, retention (no value)
@@ -113,17 +114,15 @@ sequenceDiagram
     M->>A: send_secret(name)
     A->>H: confirmation (elicitation, where the client supports it)
     A->>A: read value, key + nonce, envelope, pad, XChaCha20-Poly1305 with aad
-    A->>R: POST /reveals {ttl, ciphertext} (bearer key)
+    A->>R: POST /api/v1/reveals {ttl_seconds, ciphertext} (bearer key)
     R-->>A: drop_id, reveal_token, revoke_token, expires_at
     A-->>M: link, expiry, message text
     M->>H: link + what it is + opens once + expiry + copy kept or not
     H->>B: open link, click Reveal credentials
-    B->>R: POST /reveals/open {drop_id, reveal_token}
+    B->>R: POST /api/v1/reveals/open {drop_id, reveal_token}
     R-->>B: ciphertext, deleted atomically
     B->>B: rebuild aad, decrypt, unpad, show value with copy and hide
-    A->>R: POST /reveals/status (long poll)
-    R-->>A: state opened at time
-    A-->>M: opened at time (no value)
+    Note over B,R: A later visit to the link reports already opened, with the time
 ```
 
 Details: [architecture](docs/architecture.md), [threat model](docs/threat-model.md), [crypto spec](docs/crypto-spec.md), [relay API](docs/api.md).
@@ -305,7 +304,7 @@ Read the [threat model](docs/threat-model.md), the [crypto specification](docs/c
 
 **Does it need Redis?** No. One relay keeps drops in memory. Several relays behind a load balancer share a Valkey or Redis instance, still without persistence.
 
-**How large can a secret be?** 64 KiB before padding, enough for certificates and keys. It is a credential exchange, not a file transfer.
+**How large can a secret be?** Up to 60 KiB in the page, and 64 KiB for the whole encrypted envelope: enough for certificates and keys. It is a credential exchange, not a file transfer.
 
 ## Roadmap
 

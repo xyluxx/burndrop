@@ -1,6 +1,6 @@
 # Threat model
 
-Status: Phase 0 draft for review. The project name is not chosen yet, so this document uses generic terms: the relay, the drop page, the extension, the CLI, and the agent runtime (the MCP server or an SDK).
+Status: current for the first release. The product is burndrop; this document names its parts generically: the relay, the drop page, the extension, the CLI, and the agent runtime (the MCP server or an SDK).
 
 This document lists what the system protects, who it protects it from, how each attack is stopped or contained, what risk remains, and which test proves each claim. It is written to be checked line by line.
 
@@ -23,7 +23,7 @@ Every drop opens once. Every drop expires. Keys live only in URL fragments and o
 | Detectability | If someone else opened a link first, the intended recipient sees that it was already opened, so the credential can be rotated. |
 | Minimal metadata | The relay stores ciphertext, an identifier, token hashes, state, and expiry. Nothing else. Purpose text and secret names never reach the relay. |
 | Model isolation | The language model driving the agent never has a secret value in its context, in tool output, or in logs. |
-| Bounded lifetime | Every drop has a TTL (default 1 hour, maximum 24 hours). Nothing about a drop is written to disk on the relay. |
+| Bounded lifetime | Every drop has a TTL (default 1 hour; the operator's maximum is 24 hours by default and can be raised to 7 days). Nothing about a drop is written to disk on the relay. |
 
 ## 3. System overview and trust boundaries
 
@@ -99,7 +99,7 @@ Out of scope (see section 8): attackers with control of the human's device or th
 
 ## 6. Threats, mitigations, and residual risk
 
-Each threat lists the attack path, the impact if it succeeded, the design mitigations, what risk remains, and the test that proves the mitigation. Items marked "(proposed)" are additions to the original specification, called out so they can be approved or rejected.
+Each threat lists the attack path, the impact if it succeeded, the design mitigations, what risk remains, and the test that proves the mitigation. Items marked "(added)" were additions to the original brief; all of them are implemented. The one item marked "(roadmap)" is not.
 
 ### T1. Compromised relay
 
@@ -148,7 +148,7 @@ Each threat lists the attack path, the impact if it succeeded, the design mitiga
 **Mitigations.**
 - Fresh keypair per request. There is no long-term key to steal or to substitute once.
 - The fingerprint (SHA-256 of the public key, first 64 bits, shown as four groups of four hex characters) is shown by the agent in chat and by the page. A mismatch means the link was altered.
-- (proposed) **Key commitment at the relay.** When the agent creates a slot it sends SHA-256 of the recipient public key. The upload must carry the same commitment computed by the page from the fragment key. A mismatch is rejected. An attacker who edits the link must now also control the relay. This makes key substitution require two independent compromises (chat channel and relay) instead of one.
+- (added) **Key commitment at the relay.** When the agent creates a slot it sends SHA-256 of the recipient public key. The upload must carry the same commitment computed by the page from the fragment key. A mismatch is rejected. An attacker who edits the link must now also control the relay. This makes key substitution require two independent compromises (chat channel and relay) instead of one.
 - The displayed metadata (purpose, storage, retention) is encrypted inside the envelope by the browser. The agent compares it to what it generated and refuses the drop on mismatch, then tells the human. A tampered link is caught even if the human did not compare fingerprints.
 - The extension and CLI compute the fingerprint locally from the link, so a malicious page cannot fake it there.
 
@@ -168,7 +168,7 @@ Each threat lists the attack path, the impact if it succeeded, the design mitiga
 - Strict Content-Security-Policy with hash-pinned scripts and styles, no inline event handlers, `connect-src` limited to the relay origin, `frame-ancestors 'none'`, `form-action 'none'`, `base-uri 'none'`. This stops injected third-party script and framing. It does not stop a fully replaced first-party page, which is why the hash and the extension exist.
 - Subresource Integrity is not needed because there are no subresources. If a future build splits files, SRI is mandatory.
 - The page can be served from an origin separate from the relay so that a relay compromise does not automatically become a page compromise. This is an option, not the default, because on a single host it adds a hostname without adding security (see the design doc).
-- (proposed) `verify-page` command in the CLI and a "verified page" indicator in the extension: fetch the page, hash it, compare to the published manifest for the version it declares. This is the Code Verify pattern.
+- (added) `verify-page` command in the CLI and a "verified page" indicator in the extension: fetch the page, hash it, compare to the published manifest for the version it declares. This is the Code Verify pattern.
 
 **Residual risk.** Hosted-page users trust the page host at the moment of use. This is stated plainly in the docs. The extension and CLI remove this trust.
 
@@ -182,7 +182,7 @@ Each threat lists the attack path, the impact if it succeeded, the design mitiga
 - No GET or HEAD request changes any state. The page URL returns a static page. API endpoints reject GET and HEAD with 405.
 - The URL fragment is never sent to a server, so a scanner that fetches the URL sees only the path (`/drop` or `/reveal`). Drop IDs and tokens are in the fragment, so a scanner learns nothing, not even which drop exists.
 - Consuming a drop requires a POST with a JSON body and a custom request header from a click on the page. Sandboxes that only fetch do nothing. Sandboxes that execute JavaScript but do not click do nothing.
-- The reveal action is a single deliberate click with a warning that it can only be done once. (proposed, optional) A two-step confirmation can be enabled for environments known to run sandboxes that click buttons.
+- The reveal action is a single deliberate click with a warning that it can only be done once. (roadmap) A two-step confirmation could be enabled for environments known to run sandboxes that click buttons.
 - Because every drop is one-time, a burn by a sandbox is visible: the human sees "already opened" with a timestamp and the agent can re-send after rotating.
 
 **Residual risk.** A sandbox that executes JavaScript and clicks buttons can burn a reveal link. The human will see it and the agent will re-send. The value would be inside the sandbox operator's system, which the organization chose to trust with its links.
@@ -212,7 +212,7 @@ Each threat lists the attack path, the impact if it succeeded, the design mitiga
 - Revoke requires a valid token for that slot. The drop ID alone does nothing.
 - Upload requires the upload token. Knowing the drop ID does not allow poisoning.
 - There is deliberately no lockout after failed token attempts, because a lockout would let anyone who learned a drop ID disable that slot. Tokens have 128 bits of entropy, so brute force is infeasible; rate limits per IP bound the attempt rate anyway.
-- (proposed) Slot creation requires an agent API key, so strangers cannot create or fill slots at all.
+- (added) Slot creation requires an agent API key, so strangers cannot create or fill slots at all.
 - The expiry sweeper deletes only expired entries and is the only automatic deletion path.
 
 **Residual risk.** A relay intruder can delete anything (availability only). A revoked or deleted drop is visible as such to both sides.
@@ -228,9 +228,9 @@ Each channel, its mitigation, and the residual risk:
 | Relay access logs | Identifiers live in the fragment and request bodies, never in URLs. Access logs record method, route name, status, and latency. Bodies are never logged. The proxy (Caddy) logs the path, which is only `/drop`, `/reveal`, or `/api/...` with no identifiers. | None by construction. |
 | Relay error logs | Errors are logged with a request ID and a category. Never with request bodies or headers. | Operator mistakes in custom logging. Documented. |
 | Relay backups | No disk persistence. Memory store by default. Redis documented with `save ""` and `appendonly no`, and the docs say not to back it up. | An operator who enables Redis persistence against the docs would have ciphertext and token hashes on disk, still no plaintext. |
-| Agent runtime logs | Values are never logged. The redaction filter also runs on the agent's own log lines. | Subprocess output that transforms a value (base64, split) can evade redaction. Documented. |
+| Agent runtime logs | Values are never logged. Error text that reaches the audit log passes through the redaction filter, which knows every value the process has fetched, stored, or injected. | Subprocess output that transforms a value (base64, split) can evade redaction. Documented. |
 | Model context | `fetch_secret` returns a reference name and metadata. `run_with_secret` injects values as environment variables into a subprocess and redacts known values from captured output. `send_secret` takes a name. `list_secrets` returns names and metadata. Errors are sanitized. | Redaction is best effort. A subprocess that prints a transformed value can leak it into output. Documented, with `run_with_secret` output limits and a per-call option to discard output. |
-| Clipboard | Copy happens only on an explicit click. The page offers a clear-clipboard action and clears it automatically after 60 seconds while the page is open (best effort, subject to browser focus rules). | Clipboard managers and OS clipboard history (Windows clipboard history and cloud clipboard, macOS utilities) may retain the value. The docs say so and recommend disabling cloud clipboard sync on machines used for secrets. |
+| Clipboard | Copy happens only on an explicit click. The page offers a clear-clipboard action next to the value. It does not overwrite the clipboard on a timer, because a blind overwrite would destroy whatever the human copied afterwards. | Clipboard managers and OS clipboard history (Windows clipboard history and cloud clipboard, macOS utilities) may retain the value. The docs say so and recommend disabling cloud clipboard sync on machines used for secrets. |
 | Browser history and URL bar | The page removes the fragment from the address bar with `history.replaceState` as soon as it has read it, before any network call. `Referrer-Policy: no-referrer`. `Cache-Control: no-store`. No service worker, no local storage of secrets. After a drop is consumed, the link in history is worthless: the upload token is spent and the public key is public, or the reveal ciphertext is gone. | A live reveal link sits in history until it is opened or expires. Browser tab sync may copy the URL to another device within that window. Short TTLs limit this. |
 | Chat history and notifications | The link is only dangerous until consumed. The agent is instructed never to repeat a link and to keep TTLs short. | Retention archives hold spent links, which is harmless, and live links for the TTL window. |
 | Screenshots, screen sharing, shoulder surfing | The value is masked by default; showing it is an explicit action. The fragment leaves the address bar immediately. | Out of scope beyond these defaults. |
@@ -257,7 +257,7 @@ This threat is specific to agents and is the most important one on the agent sid
 **Mitigations.**
 - The model never holds a value, so path 1 can only exfiltrate a one-time link, not a value, and the theft is visible to the human as "already opened" if they try the link.
 - MCP clients show each tool call and its arguments for approval. `send_secret`, `run_with_secret`, and `delete_secret` are marked as destructive or sensitive in their tool annotations so clients that honor annotations require confirmation.
-- (proposed) When the client supports MCP elicitation, `send_secret` asks the human to confirm the secret name and destination before creating a reveal link. Without elicitation, the client's approval prompt is the gate.
+- (added) When the client supports MCP elicitation, `send_secret` asks the human to confirm the secret name and destination before creating a reveal link. Without elicitation, the client's approval prompt is the gate.
 - Secrets carry a `sendable` flag set at request time. A secret requested as "use in this environment only" cannot be sent with `send_secret` at all.
 - The drop page shows the purpose, storage location, and retention in plain language so the human can refuse a request that does not match the task (path 2). The agent instruction file requires the agent to state the same in chat.
 - `run_with_secret` supports an operator allowlist of commands and injects only the named secrets, each under a declared environment variable name. Output is size-limited and redacted.
@@ -292,7 +292,7 @@ This threat is specific to agents and is the most important one on the agent sid
 **Attack.** Anyone on the internet creates reveal links on the operator's domain and sends them to victims. The domain's reputation makes the phishing credible. Storage and bandwidth are consumed.
 
 **Mitigations.**
-- (proposed) Slot creation requires an agent API key issued by the operator. This is on by default and can be disabled for private networks. Per-agent rate limits key on it.
+- (added) Slot creation requires an agent API key issued by the operator. This is on by default and can be disabled for private networks. Per-agent rate limits key on it.
 - The reveal page renders the decrypted value as inert text. Nothing inside it is turned into a link or HTML. The page carries a fixed notice that content comes from an automated agent.
 - Size limits, TTL limits, a global cap on live slots, and per-IP rate limits bound resource abuse.
 
@@ -304,7 +304,7 @@ This threat is specific to agents and is the most important one on the agent sid
 
 **Attack.** A malicious dependency, a tampered build, or a tampered release replaces the crypto or adds exfiltration.
 
-**Mitigations.** Minimal dependencies, each documented with a reason. Exact version pins and lockfiles. Dependabot and dependency review on every pull request. CodeQL. GitHub Actions pinned by commit SHA with least-privilege tokens. Reproducible Go builds with `-trimpath`. Release workflow produces checksums, an SBOM, Sigstore signatures, and provenance attestations for binaries, container images, npm packages, and Python packages. The drop page hash is published per release. The libsodium WebAssembly artifact is pinned by hash in the build.
+**Mitigations.** Minimal dependencies, each documented with a reason. Exact version pins and lockfiles. Dependabot and dependency review on every pull request. CodeQL. GitHub Actions pinned by commit SHA with least-privilege tokens. Reproducible Go builds with `-trimpath`. Release workflow produces checksums, an SBOM, Sigstore signatures, and provenance attestations for binaries, container images, npm packages, and Python packages. The drop page hash is published per release. The libsodium package is pinned to an exact version with its lockfile integrity hash, and the published page hash covers the embedded WebAssembly artifact.
 
 **Residual risk.** A compromise of an upstream library at the source (libsodium, Go's x/crypto) would affect every user of those libraries. Pinning and hash verification limit exposure to a deliberate upgrade.
 
@@ -322,7 +322,7 @@ This threat is specific to agents and is the most important one on the agent sid
 
 ### T16. Expiry and clock handling
 
-**Mitigations.** The relay clock is authoritative. TTL is enforced server-side at every read. The countdown on the page is informational. Expired entries are removed by a sweeper and also treated as absent if read before the sweep. Maximum TTL is capped at 24 hours regardless of the request.
+**Mitigations.** The relay clock is authoritative. TTL is enforced server-side at every read. The countdown on the page is informational. Expired entries are removed by a sweeper and also treated as absent if read before the sweep. Requests above the operator's maximum TTL (24 hours by default, at most 7 days) are clamped, never refused.
 
 **Tests.** Read at and after expiry returns the "expired" state. TTL above the maximum is clamped.
 
@@ -330,7 +330,7 @@ This threat is specific to agents and is the most important one on the agent sid
 
 **Mitigations.** The fragment carries a version field that must be present and recognized. Unknown versions are refused, never guessed. Parsing is strict: required fields, fixed lengths for keys and tokens, bounded lengths for text. The parser is fuzzed.
 
-**Tests.** Fuzz tests on the fragment parser and on every JSON decoder in the relay and clients.
+**Tests.** Fuzz tests on the fragment parser (`internal/link/fuzz_test.go`), on the envelope decoder and the padding (`internal/crypto/fuzz_test.go`), and on the relay's request decoder across every endpoint (`internal/relay/fuzz_test.go`).
 
 ### T18. Denial of service against the relay
 
@@ -340,13 +340,13 @@ This threat is specific to agents and is the most important one on the agent sid
 
 ### T19. Web attacks against the page
 
-**Mitigations.** The page has no cookies, no sessions, and no server-rendered content. CSP as in T4. `X-Content-Type-Options: nosniff`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`. The API accepts only `Content-Type: application/json` plus a custom header, which forces a CORS preflight for cross-origin callers, and the CORS allowlist contains only configured page origins. Values are placed into the DOM with `textContent`, never `innerHTML`. Clickjacking is blocked by `frame-ancestors 'none'`.
+**Mitigations.** The page has no cookies, no sessions, and no server-rendered content. CSP as in T4. `X-Content-Type-Options: nosniff`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`. The API accepts only `Content-Type: application/json` plus a custom header, which forces a CORS preflight for cross-origin callers, and the CORS allowlist contains only configured page origins plus browser extension origins (`chrome-extension://` and `moz-extension://`), which only an installed extension's bundled page can present. Values are placed into the DOM with `textContent`, never `innerHTML`. Clickjacking is blocked by `frame-ancestors 'none'`.
 
 **Tests.** Header assertions on every response. XSS payloads as secret values render as text.
 
 ### T20. Human error
 
-**Scenarios and mitigations.** Link sent to the wrong person: one-time delivery makes the mistake visible, revoke exists on both sides, TTL is short. Wrong secret pasted: revoke before the agent fetches; the agent confirms only the reference name, never the value. Secret pasted into chat: the agent instruction file requires the agent to say it is exposed, recommend rotation, and offer a drop link.
+**Scenarios and mitigations.** Link sent to the wrong person: one-time delivery makes the mistake visible, the agent can revoke (`revoke_request`, `burndrop revoke`) and the relay accepts either token, TTL is short. Wrong secret pasted: revoke before the agent fetches; the agent confirms only the reference name, never the value. Secret pasted into chat: the agent instruction file requires the agent to say it is exposed, recommend rotation, and offer a drop link.
 
 ## 7. Ways to open a drop, ranked by trust
 
@@ -379,23 +379,23 @@ Properties not claimed: protection from a compromised endpoint, hiding that an e
 
 ## 10. Threat-to-test map
 
-| Threat | Test suite |
+| Threat | Where it is tested |
 |---|---|
-| T1 | `relay/store_dump_test`, `relay/tamper_test`, `logs/grep_test` |
-| T2 | `integration/hostile_relay_test`, `extension/page_replacement_test` |
-| T3 | `integration/key_substitution_test`, `relay/commitment_test`, `agent/metadata_mismatch_test` |
-| T4 | `release/page_hash_check`, `page/csp_test`, `extension/page_replacement_test` |
-| T5 | `relay/scanner_test`, `page/no_click_no_burn_test` |
-| T6 | `relay/replay_test`, `relay/concurrent_fetch_test` |
-| T7 | `relay/revoke_auth_test`, `relay/double_upload_test` |
-| T8 | `logs/grep_test`, `page/history_test`, `mcp/no_values_in_output_test` |
-| T10 | `mcp/injection_test`, `mcp/sendable_flag_test`, `mcp/audit_log_test` |
-| T11 | `relay/token_entropy_test`, `relay/ratelimit_test` |
-| T12 | `crypto/padding_test` |
-| T13 | `relay/api_key_required_test`, `page/inert_text_test` |
-| T14 | release workflow self-verification, `ci/pinned_actions_check` |
-| T15 | `storage/*_test` including failure modes |
-| T16 | `relay/expiry_test` |
-| T17 | `crypto/fragment_fuzz_test`, `relay/decoder_fuzz_test` |
-| T18 | `relay/limits_test` |
-| T19 | `page/headers_test`, `page/xss_as_value_test` |
+| T1 | `internal/relay/adversarial_test.go`: TestStoreDumpIsUnreadable, TestLogsContainNoSecrets, TestTamperedCiphertextIsRejectedByClients |
+| T2 | `internal/relay/adversarial_test.go`: TestTamperedCiphertextIsRejectedByClients; `internal/agent/agent_test.go`: TestFetchOutcomes, TestRelayFailures; `extension/e2e/extension.spec.ts`: the page a protected relay serves never runs |
+| T3 | `internal/relay/adversarial_test.go`: TestKeySubstitutionThroughLinks; `internal/relay/handlers_test.go`: TestUploadTwiceAndCommitment; `internal/agent/agent_test.go`: TestFetchOutcomes (metadata mismatch); `web/e2e/page.spec.ts`: rejects a link whose key was swapped, a link with a changed name cannot decrypt the secret |
+| T4 | release workflow page hash verification; `internal/relay/handlers_test.go`: TestSecurityHeadersAndPage; `web/e2e/page.spec.ts`: CSP header; `extension/e2e/extension.spec.ts`: verify mode |
+| T5 | `internal/relay/adversarial_test.go`: TestScannersCannotBurnDrops; `web/e2e/page.spec.ts`: reveals once, and only after a click |
+| T6 | `internal/relay/adversarial_test.go`: TestReplay, TestConcurrentSingleRead |
+| T7 | `internal/relay/handlers_test.go`: TestRevokeByEitherSide, TestUploadTwiceAndCommitment, TestBadTokens; `internal/relay/adversarial_test.go`: TestFetchWithoutFetchToken |
+| T8 | `internal/relay/adversarial_test.go`: TestLogsContainNoSecrets; `web/e2e/page.spec.ts`: the fragment is gone before the first request; `internal/mcpserver/server_test.go`: TestFullFlow asserts that no value appears in any tool output |
+| T10 | `internal/mcpserver/server_test.go`: TestFullFlow, TestSendWithoutElicitation; `internal/agent/agent_test.go`: TestSend (sendable flag, audit log) |
+| T11 | `internal/crypto/crypto_test.go`: TestTokens; `internal/relay/handlers_test.go`: TestRateLimits, TestAnonymousAgentsAreMeteredPerAddress |
+| T12 | `internal/crypto/crypto_test.go`: TestPadding; the `padding` section of `spec/vectors.json` in all three languages |
+| T13 | `internal/relay/handlers_test.go`: TestAgentAuth; `web/src/state.ts` carries the notice about automated senders shown on every reveal |
+| T14 | release workflow self-verification; `.github/workflows/hygiene.yml` (pinned actions); `.github/workflows/dependency-review.yml` |
+| T15 | `internal/storage/*_test.go` including failure modes, driven by the conformance suite in `suite_test.go` |
+| T16 | `internal/relay/handlers_test.go`: TestExpiry, TestTTLClamp; `web/e2e/page.spec.ts`: shows expired and revoked links |
+| T17 | `internal/link/fuzz_test.go`, `internal/crypto/fuzz_test.go`, `internal/relay/fuzz_test.go` |
+| T18 | `internal/relay/handlers_test.go`: TestStoreFull, TestRateLimits, TestLongPoll, TestRequestValidation |
+| T19 | `internal/relay/handlers_test.go`: TestSecurityHeadersAndPage, TestCORS; `web/e2e/page.spec.ts`: values are shown through text nodes and the page states render as expected |

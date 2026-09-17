@@ -39,7 +39,7 @@ flowchart TB
 
 | Part | Code | What it does |
 | --- | --- | --- |
-| Relay | `cmd/burndrop-relay`, `internal/relay` | Holds ciphertext for at most 24 hours, hands it out once, deletes it atomically, and serves the page. Memory store by default, Redis or Valkey for several instances. Nothing touches a disk. |
+| Relay | `cmd/burndrop-relay`, `internal/relay` | Holds ciphertext for the requested lifetime (one hour by default, capped by the operator), hands it out once, deletes it atomically, and serves the page. Memory store by default, Redis or Valkey for several instances. Nothing touches a disk. |
 | Agent binary | `cmd/burndrop`, `internal/agent`, `internal/mcpserver`, `internal/storage` | The MCP server and CLI an agent runs. Creates requests, fetches and stores secrets, runs commands with secrets injected, sends secrets, keeps an audit log. Twelve storage backends. |
 | Crypto | `internal/crypto`, `web/src/crypto.ts`, the SDK crypto modules | One small module per language, same structure, shared vectors. |
 | Links | `internal/link`, `web/src/link.ts` | Build and parse the fragments. |
@@ -73,24 +73,24 @@ sequenceDiagram
     participant B as Browser
     M->>A: request_secret(name, purpose, retention)
     A->>A: key pair (pk, sk); commitment = SHA-256(pk)
-    A->>R: POST /drops {ttl, commitment} (bearer key)
+    A->>R: POST /api/v1/drops {ttl_seconds, commitment} (bearer key)
     R-->>A: drop_id, upload_token, fetch_token, expires_at
     A-->>M: link, fingerprint, expiry, message text
     M->>H: link + fingerprint + purpose + storage + retention
     H->>B: open link
     B->>B: read fragment, replaceState, show metadata and fingerprint
-    B->>R: POST /drops/status {drop_id}
+    B->>R: POST /api/v1/drops/status {drop_id}
     H->>B: paste secret, click Encrypt and send
     B->>B: envelope, pad, crypto_box_seal(pk)
-    B->>R: POST /drops/upload {drop_id, upload_token, commitment, ciphertext}
+    B->>R: POST /api/v1/drops/upload {drop_id, upload_token, commitment, ciphertext}
     R-->>B: uploaded (upload token consumed)
-    A->>R: POST /drops/status {drop_id, wait_seconds: 30, wait_while: created}
+    A->>R: POST /api/v1/drops/status {drop_id, wait_seconds: 30, wait_while: created}
     R-->>A: state uploaded
-    A->>R: POST /drops/fetch {drop_id, fetch_token}
+    A->>R: POST /api/v1/drops/fetch {drop_id, fetch_token}
     R-->>A: ciphertext (deleted atomically)
     A->>A: open sealed box, verify metadata, store value, zero sk
     A-->>M: stored as name, storage, retention (no value)
-    B->>R: POST /drops/status (long poll)
+    B->>R: POST /api/v1/drops/status (long poll)
     R-->>B: state fetched, page shows Delivered
 ```
 
@@ -106,19 +106,17 @@ sequenceDiagram
     M->>A: send_secret(name)
     A->>H: confirmation (elicitation, where the client supports it)
     A->>A: read value, key + nonce, envelope, pad, XChaCha20-Poly1305 with aad
-    A->>R: POST /reveals {ttl, ciphertext} (bearer key)
+    A->>R: POST /api/v1/reveals {ttl_seconds, ciphertext} (bearer key)
     R-->>A: drop_id, reveal_token, revoke_token, expires_at
     A-->>M: link, expiry, message text
     M->>H: link + what it is + opens once + expiry + copy kept or not
     H->>B: open link
     B->>B: read fragment, replaceState, show name and expiry
     H->>B: click Reveal credentials
-    B->>R: POST /reveals/open {drop_id, reveal_token}
+    B->>R: POST /api/v1/reveals/open {drop_id, reveal_token}
     R-->>B: ciphertext (deleted atomically)
     B->>B: rebuild aad, decrypt, unpad, show value with copy and hide
-    A->>R: POST /reveals/status (long poll)
-    R-->>A: state opened at time
-    A-->>M: opened at time (no value)
+    Note over B,R: A later visit to the link reports already opened, with the time
 ```
 
 ## Properties and where they are proven

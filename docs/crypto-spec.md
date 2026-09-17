@@ -14,15 +14,16 @@ with no custom construction.
 
 | Purpose | Primitive | Go | Browser and TypeScript | Python |
 | --- | --- | --- | --- | --- |
-| Human to agent | libsodium sealed box: X25519 ephemeral key agreement, XSalsa20-Poly1305, nonce = BLAKE2b-24(ephemeral pk, recipient pk) | `golang.org/x/crypto/nacl/box` `SealAnonymous`, `OpenAnonymous` | `crypto_box_seal`, `crypto_box_seal_open` | `nacl.public.SealedBox` |
+| Human to agent | libsodium sealed box: X25519 ephemeral key agreement, XSalsa20-Poly1305, nonce = BLAKE2b-24(ephemeral pk, recipient pk) | `golang.org/x/crypto/nacl/box` `SealAnonymous`, `OpenAnonymous` | `crypto_box_seal`, `crypto_box_seal_open` | `nacl.bindings.crypto_box_seal`, `crypto_box_seal_open` |
 | Agent to human | XChaCha20-Poly1305 (IETF): 256-bit key, 192-bit nonce, 128-bit tag, with additional data | `golang.org/x/crypto/chacha20poly1305` `NewX` | `crypto_aead_xchacha20poly1305_ietf_encrypt` and `_decrypt` | `nacl.bindings.crypto_aead_xchacha20poly1305_ietf_*` |
 | Fingerprints, commitments, token hashes | SHA-256 | `crypto/sha256` | WebCrypto `digest` | `hashlib` |
-| Randomness | Operating system CSPRNG | `crypto/rand` | `randombytes_buf` | `os.urandom` through PyNaCl |
+| Randomness | Operating system CSPRNG | `crypto/rand` | `randombytes_buf` | `os.urandom` |
 | Padding | ISO/IEC 7816-4: append `0x80`, then `0x00` bytes to the next multiple of the block; block 256 bytes | own code | own code | own code |
 | Encoding | base64url without padding, strict (RFC 4648 section 5, canonical trailing bits) | `base64.RawURLEncoding.Strict()` | own code | own code |
 
-The relay uses only SHA-256 and the CSPRNG. No other primitive appears
-anywhere in the project.
+The relay uses only SHA-256 and the CSPRNG, and the exchange itself uses
+nothing beyond this table. The agent's age vault storage backend additionally
+uses age (X25519, scrypt for passphrases, ChaCha20-Poly1305) for data at rest.
 
 Vectors: `sealed_box`, `xchacha20poly1305`, `padding`, `fingerprint`.
 
@@ -102,7 +103,7 @@ Encoding rules, identical in all implementations so that the same envelope
 produces the same bytes:
 
 - Field order: `v`, `type`, `name`, `purpose`, `storage`, `retention`, `fingerprint`, `format`, `secret`. Empty optional fields are omitted.
-- No HTML escaping (`<`, `>`, `&` appear literally). `U+2028` and `U+2029` are written as ` ` and ` `. Control characters below `U+0020` are `\uXXXX` except `\n`, `\r`, `\t`, which use the short forms; `"` and `\` are escaped. This is Go's encoder with HTML escaping off; the TypeScript and Python encoders reproduce it.
+- No HTML escaping (`<`, `>`, `&` appear literally). `U+2028` and `U+2029` are written as the six-character escapes `\u2028` and `\u2029`. Control characters below `U+0020` are `\uXXXX` except `\n`, `\r`, `\t`, which use the short forms; `"` and `\` are escaped. This is Go's encoder with HTML escaping off; the TypeScript and Python encoders reproduce it.
 - `format` is `text` (the secret is the UTF-8 string) or `base64` (the secret is base64url of the raw bytes). A value is stored as `text` when it is valid UTF-8 with no control character other than tab, newline, and carriage return; otherwise `base64`.
 
 Validation, applied when encoding and when decoding (decoding also
@@ -148,7 +149,7 @@ A drop link is about 250 characters plus the metadata text.
 
 ## 7. Key and value lifecycle on the agent
 
-- `sk` for a request is created by `request_secret` and stored, with the fetch token and the metadata, as a `pending` record in the configured storage backend, under the same protection as stored secrets and with a retention equal to the request's expiry. This is what lets `fetch_secret` work after the MCP server restarts and lets expired requests disappear on their own. `sk` is deleted and zeroed as soon as the drop is decrypted, revoked, or found expired.
+- `sk` for a request is created by `request_secret` and stored, with the fetch token and the metadata, as a `pending` record in the configured storage backend, under the same protection as stored secrets and with a retention equal to the request's expiry. With a persistent backend this is what lets `fetch_secret` work after the MCP server restarts (the memory backend forgets pending requests with the process), and it lets expired requests disappear on their own. `sk` is deleted and zeroed as soon as the drop is decrypted, revoked, or found expired.
 - A reveal key exists only for the duration of `send_secret`; the link is the only place it lives afterwards.
 - Values are held in memory only for the time needed to write them to the backend, or for the lifetime of the process under `session` retention.
 - Zeroing is best effort in Go and JavaScript: buffers are overwritten, but the runtime may have made copies. This is stated rather than promised.
