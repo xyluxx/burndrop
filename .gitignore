@@ -2,6 +2,7 @@
 /bin/
 /dist/
 /web/dist/*
+/web/build/
 !/web/dist/.gitkeep
 /extension/dist/
 /sdk/typescript/dist/

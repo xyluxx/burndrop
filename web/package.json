@@ -1,0 +1,34 @@
+{
+  "name": "burndrop-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The burndrop drop page: one HTML file that encrypts a secret in the browser for one agent, or reveals one once.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "libsodium-wrappers": "0.8.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/cli": "4.3.3",
+    "@types/libsodium-wrappers": "0.8.2",
+    "@types/node": "24.13.5",
+    "@vitest/coverage-v8": "5.0.1",
+    "esbuild": "0.28.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "5.0.1"
+  }
+}
