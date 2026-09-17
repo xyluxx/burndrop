@@ -35,7 +35,9 @@ project or to the global MCP settings, and copy the rule file.
 VS Code: copy `mcp/vscode-mcp.json` to `.vscode/mcp.json`.
 
 If `burndrop` is not on the PATH of the client, replace `"command":
-"burndrop"` with the full path to the binary.
+"burndrop"` with the full path to the binary. With Node installed and no
+binary at all, `"command": "npx"` with `"args": ["-y", "burndrop", "mcp"]`
+downloads the release binary for the platform on first use.
 
 ## What the instructions say
 
