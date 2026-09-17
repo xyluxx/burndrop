@@ -33,12 +33,22 @@ type cli struct {
 
 func newCLI(t *testing.T) *cli {
 	t.Helper()
+	return newCLIWith(t, nil)
+}
+
+// newCLIWith lets a test adjust the relay configuration, for example to run
+// the relay without agent auth.
+func newCLIWith(t *testing.T, mutate func(*relay.Config)) *cli {
+	t.Helper()
 	keyring.MockInit()
 	cfg := relay.DefaultConfig()
 	cfg.PublicOrigin = "http://127.0.0.1"
 	cfg.AgentKeys = []relay.AgentKey{{ID: "test", Hash: crypto.HashToken(testKey)}}
 	cfg.RateAgentPerMin = 10000
 	cfg.RatePagePerMin = 10000
+	if mutate != nil {
+		mutate(&cfg)
+	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -418,4 +428,25 @@ func TestMCPCommandStartsAndStops(t *testing.T) {
 		t.Fatal("bad flag")
 	}
 	_ = context.Background()
+}
+
+// A relay that runs without agent auth (the local quickstart) needs no key:
+// init records that, every agent command works, and doctor says why.
+func TestAuthOffNeedsNoKey(t *testing.T) {
+	c := newCLIWith(t, func(cfg *relay.Config) { cfg.AgentAuth = "off"; cfg.AgentKeys = nil })
+	delete(c.env, "BURNDROP_API_KEY")
+	out := c.mustRun("init", "-relay", c.relay.URL, "-storage", "keychain", "-yes")
+	if !strings.Contains(out, "no agent key is needed") {
+		t.Fatalf("init output: %s", out)
+	}
+	if out := c.mustRun("request", "-name", "openai-api-key", "-purpose", "Call the OpenAI API"); !strings.Contains(out, "/drop#") {
+		t.Fatalf("request without a key: %s", out)
+	}
+	if out := c.mustRun("pending"); !strings.Contains(out, "openai-api-key") {
+		t.Fatalf("pending without a key: %s", out)
+	}
+	out = c.mustRun("doctor")
+	if strings.Contains(out, "FAIL agent key") || !strings.Contains(out, "none needed") {
+		t.Fatalf("doctor: %s", out)
+	}
 }

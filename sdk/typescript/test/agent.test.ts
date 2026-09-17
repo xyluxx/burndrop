@@ -60,14 +60,16 @@ describe("Agent construction and validation", () => {
   });
 
   it("checks envelopes exactly like the Go agent", () => {
-    const rec = { name: "n", fingerprint: "0000-0000-0000-0000", retention: "session" };
-    const env: Envelope = { v: 1, type: "drop", name: "n", retention: "session", fingerprint: "0000-0000-0000-0000", format: "text", secret: "s" };
+    const rec = { name: "n", fingerprint: "0000-0000-0000-0000", retention: "session", purpose: "p", storage: "s" };
+    const env: Envelope = { v: 1, type: "drop", name: "n", purpose: "p", storage: "s", retention: "session", fingerprint: "0000-0000-0000-0000", format: "text", secret: "s" };
     expect(checkEnvelope(env, rec)).toBe("");
     expect(checkEnvelope({ ...env, fingerprint: undefined }, rec)).toBe("");
     expect(checkEnvelope({ ...env, type: "reveal" }, rec)).toMatch(/not a drop/);
     expect(checkEnvelope({ ...env, name: "other" }, rec)).toMatch(/name/);
     expect(checkEnvelope({ ...env, fingerprint: "1111-1111-1111-1111" }, rec)).toMatch(/fingerprint/);
     expect(checkEnvelope({ ...env, retention: "until-revoked" }, rec)).toMatch(/retention/);
+    expect(checkEnvelope({ ...env, purpose: "other" }, rec)).toMatch(/purpose/);
+    expect(checkEnvelope({ ...env, storage: "other" }, rec)).toMatch(/storage/);
   });
 });
 
@@ -255,6 +257,12 @@ describe("fetchSecret", () => {
     expect(name.message).toContain("secret name in the submission does not match");
     const retention = await tampered((e) => ({ ...e, retention: "session" }));
     expect(retention.message).toContain("retention shown to the human does not match");
+    const purpose = await tampered((e) => ({ ...e, purpose: "a purpose the agent never stated" }));
+    expect(purpose.status).toBe("rejected");
+    expect(purpose.message).toContain("purpose shown to the human does not match");
+    const storage = await tampered((e) => ({ ...e, storage: "somewhere else" }));
+    expect(storage.status).toBe("rejected");
+    expect(storage.message).toContain("storage description shown to the human does not match");
     const kind = await tampered((e) => ({ v: 1, type: "reveal", name: e.name, format: "text", secret: "value-value" }));
     expect(kind.message).toContain("not a drop");
     const garbage = await tampered(() => {

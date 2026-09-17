@@ -125,7 +125,7 @@ func (a *Agent) Request(ctx context.Context, in RequestInput) (RequestOutput, er
 	commitment := crypto.Commitment(pub[:])
 	created, err := a.Relay.CreateDrop(ctx, commitment, ttl)
 	if err != nil {
-		a.log(Event{Event: "request_secret", Name: in.Name, Result: "relay_error", Detail: safeErr(err)})
+		a.log(Event{Event: "request_secret", Name: in.Name, Result: "relay_error", Detail: a.safeErr(err)})
 		return RequestOutput{}, err
 	}
 	storageName := a.Store.Persistent().Name()
@@ -382,7 +382,7 @@ func (a *Agent) fetchUploaded(ctx context.Context, rec pendingRecord, out FetchO
 		// The ciphertext is gone from the relay. Keep the pending record so
 		// the operator can see what happened; the value itself is lost and
 		// the human must submit again.
-		a.log(Event{Event: "fetch_secret", Name: rec.Name, DropID: rec.DropID, Result: "store_failed", Detail: safeErr(err)})
+		a.log(Event{Event: "fetch_secret", Name: rec.Name, DropID: rec.DropID, Result: "store_failed", Detail: a.safeErr(err)})
 		return FetchOutput{}, fmt.Errorf("the secret was received but could not be stored (%w); ask the human to submit again after fixing storage", err)
 	}
 	a.Redactor.Add(rec.Name, value)
@@ -408,6 +408,10 @@ func checkEnvelope(env crypto.Envelope, rec pendingRecord) string {
 		return "the fingerprint shown to the human does not match this request"
 	case env.Retention != rec.Retention:
 		return "the retention shown to the human does not match the request"
+	case env.Purpose != rec.Purpose:
+		return "the purpose shown to the human does not match the request"
+	case env.Storage != describeStorage(rec.Storage):
+		return "the storage description shown to the human does not match the request"
 	}
 	return ""
 }
@@ -489,7 +493,7 @@ func (a *Agent) Send(ctx context.Context, in SendInput) (SendOutput, error) {
 	}
 	created, err := a.Relay.CreateReveal(ctx, ct, ttl)
 	if err != nil {
-		a.log(Event{Event: "send_secret", Name: in.Name, Result: "relay_error", Detail: safeErr(err)})
+		a.log(Event{Event: "send_secret", Name: in.Name, Result: "relay_error", Detail: a.safeErr(err)})
 		return SendOutput{}, err
 	}
 	r := link.Reveal{ID: created.ID, RevealToken: created.RevealToken, Key: key[:], Name: in.Name, KeepsCopy: keepsCopy}
@@ -542,7 +546,7 @@ func (a *Agent) Delete(ctx context.Context, name string) error {
 		result = "error"
 	}
 	a.Redactor.Remove(name)
-	a.log(Event{Event: "delete_secret", Name: name, Result: result, Detail: safeErr(err)})
+	a.log(Event{Event: "delete_secret", Name: name, Result: result, Detail: a.safeErr(err)})
 	return err
 }
 
@@ -590,12 +594,14 @@ func (a *Agent) log(e Event) {
 	_ = a.Audit.Log(e)
 }
 
-// safeErr returns an error string with known values redacted, for logs.
-func safeErr(err error) string {
+// safeErr returns an error string for the audit log with every value the
+// process has handled redacted, so a backend or relay error that echoes a
+// value cannot carry it into the log.
+func (a *Agent) safeErr(err error) string {
 	if err == nil {
 		return ""
 	}
-	return err.Error()
+	return a.Redactor.Redact(err.Error())
 }
 
 func bytesReader(b []byte) *bytes.Reader { return bytes.NewReader(b) }

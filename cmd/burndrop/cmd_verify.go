@@ -106,7 +106,11 @@ func (a *app) cmdDoctor(ctx context.Context, args []string) int {
 		check("config mode", fmt.Errorf("%s is readable by other users (mode %o); chmod 600 it", paths.ConfigFile, info.Mode().Perm()), "")
 	}
 	_, src, err := cfg.ResolveAgentKey(a.getenv, a.keychainGet)
-	check("agent key", err, "from "+src)
+	keyNote := "from " + src
+	if src == agent.AgentKeyNone {
+		keyNote = "none needed (the relay was set up without agent auth)"
+	}
+	check("agent key", err, keyNote)
 	rc, err := client.New(cfg.Relay, "", "burndrop-cli/"+a.version)
 	check("relay origin", err, rc.Origin)
 	if err == nil {

@@ -282,6 +282,10 @@ def check_envelope(env: crypto.Envelope, request: Request) -> str:
         return "the fingerprint shown to the human does not match this request"
     if env.retention != request.retention:
         return "the retention shown to the human does not match the request"
+    if env.purpose != request.purpose:
+        return "the purpose shown to the human does not match the request"
+    if env.storage != request.storage:
+        return "the storage description shown to the human does not match the request"
     return ""
 
 

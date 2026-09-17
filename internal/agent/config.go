@@ -229,8 +229,8 @@ func (c *Config) Validate() error {
 	if !known {
 		return fmt.Errorf("storage %q is not one of %s", c.Storage, strings.Join(KnownBackends, ", "))
 	}
-	if c.AgentKey != "" && !strings.HasPrefix(c.AgentKey, "keychain:") && !strings.HasPrefix(c.AgentKey, "env:") {
-		return errors.New("agent_key must be keychain:<service>/<entry> or env:<VARIABLE>; never a plain value")
+	if c.AgentKey != "" && c.AgentKey != AgentKeyNone && !strings.HasPrefix(c.AgentKey, "keychain:") && !strings.HasPrefix(c.AgentKey, "env:") {
+		return errors.New("agent_key must be keychain:<service>/<entry>, env:<VARIABLE>, or none; never a plain value")
 	}
 	if _, err := c.TTL(); err != nil {
 		return err
@@ -277,6 +277,10 @@ func (c *Config) MaxOutput() int {
 // the OS credential store. With no reference, the BURNDROP_API_KEY
 // variable is tried first, then the keychain default. The second result
 // names the source for diagnostics.
+// AgentKeyNone in agent_key records that the relay was set up without agent
+// auth, so no key is looked up and no Authorization header is sent.
+const AgentKeyNone = "none"
+
 func (c *Config) ResolveAgentKey(getenv func(string) string, keychain func(service, entry string) (string, error)) (string, string, error) {
 	if getenv == nil {
 		getenv = os.Getenv
@@ -287,6 +291,9 @@ func (c *Config) ResolveAgentKey(getenv func(string) string, keychain func(servi
 			return strings.TrimSpace(v), "env:" + DefaultAgentKeyEnv, nil
 		}
 		ref = DefaultAgentKeyRef
+	}
+	if ref == AgentKeyNone {
+		return "", ref, nil
 	}
 	switch {
 	case strings.HasPrefix(ref, "env:"):

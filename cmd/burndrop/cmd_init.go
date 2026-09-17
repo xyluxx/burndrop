@@ -151,6 +151,9 @@ func (a *app) cmdInit(ctx context.Context, args []string) error {
 		default:
 			return fmt.Errorf("-agent-key-from must be env, keychain, or prompt")
 		}
+	} else {
+		cfg.AgentKey = agent.AgentKeyNone
+		fmt.Fprintln(a.stdout, "the relay runs without agent auth; no agent key is needed")
 	}
 	if chosen == "agevault" && identityFile != "" {
 		cfg.Backends.AgeVault.IdentityFile = identityFile

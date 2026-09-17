@@ -260,6 +260,18 @@ func TestFetchOutcomes(t *testing.T) {
 	if f, _ := a.Fetch(ctx, FetchInput{RequestID: r5.RequestID}); f.Status != StatusRejected {
 		t.Fatalf("tampered fingerprint: %+v", f)
 	}
+	// Wrong purpose and wrong storage description: the human was shown text
+	// this agent never produced.
+	r5b, _ := a.Request(ctx, RequestInput{Name: "five-b", Purpose: "p"})
+	h.submit(t, r5b.Link, "v5b", func(e *crypto.Envelope) { e.Purpose = "a purpose the agent never stated" })
+	if f, _ := a.Fetch(ctx, FetchInput{RequestID: r5b.RequestID}); f.Status != StatusRejected || !strings.Contains(f.Message, "purpose shown") {
+		t.Fatalf("tampered purpose: %+v", f)
+	}
+	r5c, _ := a.Request(ctx, RequestInput{Name: "five-c", Purpose: "p"})
+	h.submit(t, r5c.Link, "v5c", func(e *crypto.Envelope) { e.Storage = "somewhere else" })
+	if f, _ := a.Fetch(ctx, FetchInput{RequestID: r5c.RequestID}); f.Status != StatusRejected || !strings.Contains(f.Message, "storage description shown") {
+		t.Fatalf("tampered storage: %+v", f)
+	}
 	// Wrong type.
 	r6, _ := a.Request(ctx, RequestInput{Name: "six", Purpose: "p"})
 	h.submit(t, r6.Link, "v6", func(e *crypto.Envelope) {

@@ -343,3 +343,22 @@ def test_human_helpers_validate_input(relay: FakeRelay, agent: Agent) -> None:
     assert human.submit(request.link, b"value", relay=relay.origin) == request.fingerprint
     sent = agent.send_secret("n", b"value-1")
     assert human.open(sent.link, relay=relay.origin) == b"value-1"
+
+
+def test_fetch_rejects_tampered_purpose_and_storage(relay: FakeRelay, agent: Agent) -> None:
+    r1 = agent.request_secret("seven", "the real purpose")
+    tampered = crypto.Envelope(
+        **{**vars(honest_envelope(r1)), "purpose": "a purpose the agent never stated"}
+    )
+    upload_envelope(r1, tampered, relay.origin)
+    outcome = agent.fetch_secret(r1)
+    assert outcome.status == STATUS_REJECTED
+    assert "purpose shown" in outcome.message
+    assert outcome.value is None
+
+    r2 = agent.request_secret("eight", "p")
+    tampered = crypto.Envelope(**{**vars(honest_envelope(r2)), "storage": "somewhere else"})
+    upload_envelope(r2, tampered, relay.origin)
+    outcome = agent.fetch_secret(r2)
+    assert outcome.status == STATUS_REJECTED
+    assert "storage description shown" in outcome.message

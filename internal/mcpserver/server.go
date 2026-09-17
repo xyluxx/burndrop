@@ -59,7 +59,7 @@ func New(a *agent.Agent, opts Options) *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "run_with_secret",
 		Title:       "Run a command with secrets",
-		Description: "Run a program with stored secrets injected as environment variables. Output is returned with every known value redacted and truncated. With capture_as, the program's output is stored as a new sendable secret and not returned.",
+		Description: "Run a program with stored secrets injected as environment variables. Output is returned with every known value redacted and truncated. With capture_as, standard output is stored as a new sendable secret instead of being returned; standard error still comes back, redacted.",
 		Annotations: &mcp.ToolAnnotations{Title: "Run with secrets", DestructiveHint: boolPtr(true), OpenWorldHint: boolPtr(true)},
 	}, h.runWithSecret)
 

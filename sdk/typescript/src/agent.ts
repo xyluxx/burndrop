@@ -260,7 +260,7 @@ function sendMessage(out: SendResult): string {
  * any difference means the link the human used was not the one this agent
  * made. Returns the reason for rejection, or an empty string.
  */
-export function checkEnvelope(env: Envelope, rec: { name: string; fingerprint: string; retention: string }): string {
+export function checkEnvelope(env: Envelope, rec: { name: string; fingerprint: string; retention: string; purpose: string; storage: string }): string {
   if (env.type !== "drop") {
     return "the envelope is not a drop";
   }
@@ -272,6 +272,12 @@ export function checkEnvelope(env: Envelope, rec: { name: string; fingerprint: s
   }
   if ((env.retention ?? "") !== rec.retention) {
     return "the retention shown to the human does not match the request";
+  }
+  if ((env.purpose ?? "") !== rec.purpose) {
+    return "the purpose shown to the human does not match the request";
+  }
+  if ((env.storage ?? "") !== rec.storage) {
+    return "the storage description shown to the human does not match the request";
   }
   return "";
 }
