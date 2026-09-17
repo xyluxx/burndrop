@@ -1,0 +1,41 @@
+# Build output
+/bin/
+/dist/
+/web/dist/*
+!/web/dist/.gitkeep
+/extension/dist/
+/sdk/typescript/dist/
+/sdk/python/dist/
+/sdk/python/build/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+coverage/
+coverage.out
+coverage.html
+*.cover
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Local state (never commit secrets or session files)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.build-heartbeat
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Playwright
+test-results/
+playwright-report/
