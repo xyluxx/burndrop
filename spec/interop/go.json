@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "producer": "go",
+  "library": "burndrop internal/crypto, golang.org/x/crypto",
+  "generated_at": "2026-09-17T12:15:17Z",
+  "drops": [
+    {
+      "name": "drop text",
+      "recipient_public_key": "6TlbWVz4sOTiKbua4UZMel7ixsdlmNP6ioqdr5CrtD8",
+      "recipient_secret_key": "qrXKyRQlUDuy-ds3nG-9947S2x9GCVtn4lI4kGMT6OU",
+      "fingerprint": "b7ae-53ac-51c2-5e45",
+      "commitment": "t65TrFHCXkXQLHUlyLyI9t-rWKiUBtOtF-LfxmClGgE",
+      "sealed": "85_VYdOyz5r4QgRcKWgtW3H9RpPrLwMUAap2xYM6pAZXb9HwA3fqslXsi0D-oOGoE5BmVibAZSX4IvK42zdvMdR6qcPHZ9nswpD4NvOmVoztTd-5mTo0AyfAHKV7jpGTWIqdeswfPoVPE1LTXrdbJFtKlbyXCLXsr0MIiWtMwtJhPypQ3CgNWfbKS9J08oQxXq43j0VQD_BBn6u-bw6tvTwLoNx8pERk-BjwjN2USlfw9IFmrQVKFxo9SFTWQVSmmwzWMvEN2pIla7344pn7TXz1nTebD4M9xt5iAI1MQ6ezRBCqUnsgLfryLFOCSk9MwogRuJOER55wzKJmsdVjy7FUi_wH2rHG0Q7u3LgTfV9ufpjIirAXd9werRY-leSdy6yiqQ_FV84apEVBlP2kDA",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJvcGVuYWktYXBpLWtleSIsInB1cnBvc2UiOiJDYWxsIHRoZSBBUEkgZnJvbSB0aGUgYmlsbGluZyBzY3JpcHQiLCJzdG9yYWdlIjoibWFjT1MgS2V5Y2hhaW4iLCJyZXRlbnRpb24iOiJ1bnRpbC1yZXZva2VkIiwiZmluZ2VycHJpbnQiOiJiN2FlLTUzYWMtNTFjMi01ZTQ1IiwiZm9ybWF0IjoidGV4dCIsInNlY3JldCI6InNrLWxpdmUtMDEyMzQ1Njc4OWFiY2RlZiJ9",
+      "envelope": {
+        "v": 1,
+        "type": "drop",
+        "name": "openai-api-key",
+        "purpose": "Call the API from the billing script",
+        "storage": "macOS Keychain",
+        "retention": "until-revoked",
+        "fingerprint": "b7ae-53ac-51c2-5e45",
+        "format": "text",
+        "secret": "sk-live-0123456789abcdef"
+      },
+      "secret": "c2stbGl2ZS0wMTIzNDU2Nzg5YWJjZGVm"
+    },
+    {
+      "name": "drop json characters",
+      "recipient_public_key": "3p0P-MgAMOE3_N1KoBXO2wjXTVfb7owOoHIyjL46Gn0",
+      "recipient_secret_key": "WtmSWAgq4wo6GZpvuZfhSTVu6bw6VMQFzY-_ncBhnIA",
+      "fingerprint": "af7e-e2f1-62da-27cc",
+      "commitment": "r37i8WLaJ8wasQMSaqptbOzi9XVshmxI2DkGNSXEkDU",
+      "sealed": "_9dKBhvVG6CjmBfc1XDdtrs4AjiRDMPMrZBK3r5-vwJRjkOFlDZwp-Z_rHeEU-eyCybD6U4aWxGgirHayCkWQGyPveZGIrbKzY8NwMhDCGPfPu7LS8bjTG9ebthcmRZmtpPQUogYf4-7pOWCr5kNVJOdip9zSG2AChTpmXXSSvLcTOMZmwCaEnAIUFWtzet53V3RWXn5CHBkvqoyK28VSFtG6FL9ovsG_txK698qBdV4HxaJAG2QIvachCu_9E764RMahiCmHn80iEU4txea0HJCmgTRclqpJAjnCg74xD_6mqfg0TRGwbTmJFNxZblnVn7Ir-wAW9gc77EhzkvjjnL1QaCJ7QOtHx4jAG_7U8PdpiQjKEWV3uXuB6AdfzKN-wpBGcSc-92o9buDZ3yuxt1hQQpJQBUI8rVTJZTgyYfVyhNhq1AvWWzAtbQVBscFL2pFPJ9u6vUD-O-7_OrbRoib18Mp4IcObtPGLw7lixMZUGJTqb84UndqSjMpKSL82XF1tRd6may6kFqEZegbcCuB4-v_NWnAfx9-9JrT8vhPCsmo12d9Q97OGUTQTI-RTcMi9Nm8xRYtH1gvwWqnHGh4uSKx5TW0cuXJsYNy5CpDDz8rm05Yekqqyip9LNcef7OMnebT6GmXY52ZA35OIaBsKLyWz1LHJ4FNMD8_3vrKdvG7LLrbMYc80JsCre56a4QzV92cru54RcCFwftgb9j2qIqeLkspSFF-B_A2eqg",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJxdW90ZcOpIGtleSIsInB1cnBvc2UiOiJsaW5lIG9uZVxubGluZSB0d28gd2l0aCBcInF1b3Rlc1wiIGFuZCA8dGFncz4gJiBhbXBlcnNhbmRzIiwic3RvcmFnZSI6IjFQYXNzd29yZCIsInJldGVudGlvbiI6InNlc3Npb24iLCJmaW5nZXJwcmludCI6ImFmN2UtZTJmMS02MmRhLTI3Y2MiLCJmb3JtYXQiOiJ0ZXh0Iiwic2VjcmV0IjoidmFsdWUgd2l0aCBcInF1b3Rlc1wiLCBiYWNrXFxzbGFzaCwgdGFiXHQsIGFuZCDDvG5pY29kZSBcdTIwMjggc2VwYXJhdG9yIn0",
+      "envelope": {
+        "v": 1,
+        "type": "drop",
+        "name": "quoteé key",
+        "purpose": "line one\nline two with \"quotes\" and <tags> & ampersands",
+        "storage": "1Password",
+        "retention": "session",
+        "fingerprint": "af7e-e2f1-62da-27cc",
+        "format": "text",
+        "secret": "value with \"quotes\", back\\slash, tab\t, and ünicode \u2028 separator"
+      },
+      "secret": "dmFsdWUgd2l0aCAicXVvdGVzIiwgYmFja1xzbGFzaCwgdGFiCSwgYW5kIMO8bmljb2RlIOKAqCBzZXBhcmF0b3I"
+    },
+    {
+      "name": "drop binary",
+      "recipient_public_key": "efnBlnub9L8S6e2eReZxhd3UyaO3ZlI10l1yDwj4Tww",
+      "recipient_secret_key": "Sw05pdANfDbcsB4tMYiiXP4XAnxhQAIPSfWZwtzE4cw",
+      "fingerprint": "7dfd-a4d2-5f03-fc72",
+      "commitment": "ff2k0l8D_HJ0BORI41FJ0aC2EJfrifyZvRbhGUtUhVM",
+      "sealed": "gbEze18zUFvXv0y8-U5-JpgqAYp73k10bLknjoABOkM0TSc5_b08mWHmgRC_Q730ExJ54M5ZNYaZFJZkKLMShQDQYh-e-jpZkdSdjG6YGmSStMRvhkcFp9rhWpk4C5_DPRMi5nOmd543-1ssXAUbsIczqMHCiv-UBdvv_IgoDvLrmlLBd6Rs4pzMEyNuzeLzWSXAylpDzkPd48XfotLDySDjbvRT9qLKuH5sfK3pZMwg92ub7fg-IgqVmSmzILyhObOFfdMvvtN4PIOV8jc73hZ2kE_LPx1zcyfDvM_Oq7DvCohFHT1JloiNtw4ciOt_uPK7M_zc4P1HlWD1V1F-b_S3pUPHj8ZVAMlDKmvA3NsMh7z-wkOwXCSstA3uoeyOau0tpR129shJhJeBSSTq9A",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoiZHJvcCIsIm5hbWUiOiJ0bHMtY2VydCIsInJldGVudGlvbiI6InVudGlsOjIwMjctMDEtMDJUMDM6MDQ6MDVaIiwiZmluZ2VycHJpbnQiOiI3ZGZkLWE0ZDItNWYwMy1mYzcyIiwiZm9ybWF0IjoiYmFzZTY0Iiwic2VjcmV0IjoiQVA4UWdIOEJfZyJ9",
+      "envelope": {
+        "v": 1,
+        "type": "drop",
+        "name": "tls-cert",
+        "retention": "until:2027-01-02T03:04:05Z",
+        "fingerprint": "7dfd-a4d2-5f03-fc72",
+        "format": "base64",
+        "secret": "AP8QgH8B_g"
+      },
+      "secret": "AP8QgH8B_g"
+    }
+  ],
+  "reveals": [
+    {
+      "name": "reveal text",
+      "key": "tzeRJmAsh8M9wZwE5iS25sB5c3KdCv1Q5eyjcvSA6jI",
+      "nonce": "Jz-hSrCM-fPnJ3WLTwcNxWbenSYmQHPt",
+      "display_name": "staging-db-url",
+      "keeps_copy": true,
+      "aad": "YnVybmRyb3AvcmV2ZWFsL3YxCnN0YWdpbmctZGItdXJsCjE",
+      "blob": "Jz-hSrCM-fPnJ3WLTwcNxWbenSYmQHPtMo4H727u4c46-jvEK03T4DpcfPY_WX19QNfI4n-DArXka7cG7jNMWjP0zBoU-e-kNuuYwxNe_WttmfS0cfySoCnctBLhFiCuyW2nwidHCOLdgXKzYvp27qIMkQIlekM1BIKsblSUZhceTK1jXqD4eT8lzqpnA1_PSVb9SLJi2F5U4wM2yzgmgm-5z4SNhH_ti6MG9oLruxnRkyR6ln4Q2SnEtmtqPe1O8rV019rNWfkbfFYnCLtYq1N3dUx4Cx_sNJrAVXUV2nX7tWte1677tILxC4FT-Fd9vWEC3hAxl9CLkUGByW73OlBKOIhcxF6lyyH0L2a6OBqGeN6NA65jS6zDr4sQQtNHFA_1_QB2RPk",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoicmV2ZWFsIiwibmFtZSI6InN0YWdpbmctZGItdXJsIiwiZm9ybWF0IjoidGV4dCIsInNlY3JldCI6InBvc3RncmVzOi8vYXBwOnMzY3JldEBkYi5pbnRlcm5hbDo1NDMyL2FwcCJ9",
+      "envelope": {
+        "v": 1,
+        "type": "reveal",
+        "name": "staging-db-url",
+        "format": "text",
+        "secret": "postgres://app:s3cret@db.internal:5432/app"
+      },
+      "secret": "cG9zdGdyZXM6Ly9hcHA6czNjcmV0QGRiLmludGVybmFsOjU0MzIvYXBw"
+    },
+    {
+      "name": "reveal binary no copy",
+      "key": "ab6vMhBsMnLWkVmtSmmhFfPN7cgZ5QL2Z-yiBtC8MMI",
+      "nonce": "zPuyug43Jhx67FSG5dILQhGqkAhn741C",
+      "display_name": "session-key",
+      "keeps_copy": false,
+      "aad": "YnVybmRyb3AvcmV2ZWFsL3YxCnNlc3Npb24ta2V5CjA",
+      "blob": "zPuyug43Jhx67FSG5dILQhGqkAhn741Cem6awvY-Yw5LhYGltnA8nq2nSrOV42ryGPkds2j_wcd8oIqnY3BqosrxHEDcZ-alHSnqDHzwT7kodPi8MvOjRYSc87U6Xcp-wRok0l3P51kJ4e4hx9BK8FqZJ_JupaOIS6T7mu0QQn5tuir7SyRHbnIgr8F8yjZHuKTlHLkvfaqDQerLUuB7OlQrL44YHdSkf3QUiVYWM7Voa4AdpIXPH-Dj6AWvDnO28ZsJa1YA4jdIPYwZxvX3LR7CZclnOYVPZoBo-K1zl_6ZwidgRtsLRlgjMVMqFVKUdBWlg5uaWa_pmpNI7lfttg-foK-TP0PjnD7SbG4YnKUsNNGkNHI3Y-bOGGrJwEjkDVDdUYBvNII",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoicmV2ZWFsIiwibmFtZSI6InNlc3Npb24ta2V5IiwiZm9ybWF0IjoiYmFzZTY0Iiwic2VjcmV0IjoiQUFFQ19fNzkifQ",
+      "envelope": {
+        "v": 1,
+        "type": "reveal",
+        "name": "session-key",
+        "format": "base64",
+        "secret": "AAEC__79"
+      },
+      "secret": "AAEC__79"
+    },
+    {
+      "name": "reveal empty secret",
+      "key": "63H4-gYnTpjigNxUnjWeeLDkQKUoKCnxCrISKV1riWw",
+      "nonce": "ztW_5cx5iaLB8nl5cyPXEWw43Bw-H36c",
+      "display_name": "empty",
+      "keeps_copy": true,
+      "aad": "YnVybmRyb3AvcmV2ZWFsL3YxCmVtcHR5CjE",
+      "blob": "ztW_5cx5iaLB8nl5cyPXEWw43Bw-H36c1t6pptHHPtFkTxbxi4VcMP4qN8p_gwBZYbAftesP04cj6Shvq-8lChT4MVP4rq8dTs_seybP5vqtMH6Wlxzp624wgvwDHKOLOulAk4DQ8wGr2OFdzwaxW-jyohjEJ0JQ7t-m1S-oK_wUvIZ4VPkXGhH_7i3TR0VByIVxviFOAQre17GAE4j9nide0RTqoZsy8XJ0uBrzqeoSm7wk34452SjTeaU5XizVPKlwha8uQiIS0Tl2FYGHnNrs3qohXlIjTwt44U4qRrWYFu3xjE-W9GmqdP5U6zVpj6H263WboSk_o9vS5Y56vsTsrsUj3JLDhyV3xF5-v2IEAlCqqBlV163x_vtPiddZi5mgJo6W434",
+      "plaintext": "eyJ2IjoxLCJ0eXBlIjoicmV2ZWFsIiwibmFtZSI6ImVtcHR5IiwiZm9ybWF0IjoidGV4dCIsInNlY3JldCI6IiJ9",
+      "envelope": {
+        "v": 1,
+        "type": "reveal",
+        "name": "empty",
+        "format": "text",
+        "secret": ""
+      },
+      "secret": ""
+    }
+  ]
+}
