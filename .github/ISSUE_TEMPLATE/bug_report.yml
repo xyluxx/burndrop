@@ -1,0 +1,52 @@
+name: Bug report
+description: Something does not work the way the documentation says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. If this could be a security problem, do not file it here: use the Security tab (private vulnerability reporting) as described in SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `burndrop version` or `burndrop-relay version`, or the commit hash
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - CLI (burndrop)
+        - MCP server
+        - Relay (burndrop-relay)
+        - Drop page
+        - Browser extension
+        - Python SDK
+        - TypeScript SDK
+        - Storage backend
+        - Deployment (Compose, Tailscale, Cloudflare)
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Paste output of `burndrop doctor` if the CLI is involved. Never paste a secret value, an agent key, or a full drop link.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. burndrop init -relay https://drop.example.com
+        2. ...
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: Windows 11, macOS 15, Ubuntu 24.04; browser and version for page issues

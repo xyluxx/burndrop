@@ -1,0 +1,111 @@
+name: hygiene
+
+# Repository rules that are easier to enforce than to remember: no em dash
+# characters, no AI attribution lines, no secrets, actions pinned by SHA,
+# generated files up to date, and no personal data.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: No em dash characters in the tree
+        run: |
+          set -euo pipefail
+          if git grep -I -l -P '\x{2014}' -- ':!*.woff2' ':!*.png'; then
+            echo "::error::The em dash character (U+2014) is not allowed. Use a comma, a colon, or a new sentence."
+            exit 1
+          fi
+
+      - name: No em dash characters in commit messages
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if git log --format=%B "$BASE..$HEAD" | grep -P '\x{2014}'; then
+            echo "::error::A commit message contains an em dash character."
+            exit 1
+          fi
+
+      - name: No AI attribution in files or commit messages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          pattern='Co-Authored-By:.*(Claude|GPT|Copilot|Gemini|Anthropic|OpenAI|noreply@anthropic\.com)|Generated (with|by) (Claude|GPT|Copilot|Gemini|AI)|Created (with|by) (Claude|GPT|Copilot|Gemini|AI)'
+          if git grep -I -n -i -E "$pattern" -- ':!.github/workflows/hygiene.yml' ':!CONTRIBUTING.md'; then
+            echo "::error::AI attribution text is not allowed in the tree."
+            exit 1
+          fi
+          if [ -n "$BASE" ] && git rev-parse -q --verify "$BASE" >/dev/null 2>&1; then
+            if git log --format=%B "$BASE..$HEAD" | grep -i -E "$pattern"; then
+              echo "::error::A commit message carries an AI attribution trailer."
+              exit 1
+            fi
+          fi
+
+      - name: Actions pinned by commit SHA
+        run: |
+          set -euo pipefail
+          bad=0
+          while IFS= read -r line; do
+            ref="${line##*@}"
+            ref="${ref%% *}"
+            if ! [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::$line is not pinned to a 40 character commit SHA"
+              bad=1
+            fi
+          done < <(grep -rhoE '^\s*-?\s*uses:\s*[^ ]+@[^ ]+' .github/workflows | sed -E 's/^\s*-?\s*uses:\s*//')
+          exit $bad
+
+      - name: No personal data or internal hosts
+        run: |
+          set -euo pipefail
+          # Real looking hostnames must be RFC 2606 example domains or the project's own.
+          if git grep -I -n -E '\b[a-z0-9-]+\.(corp|internal|local|lan)\b' -- ':!docs/backends/vault.md' ':!*.lock' ':!*lock.json'; then
+            echo "::error::Internal hostnames are not allowed in the tree."
+            exit 1
+          fi
+
+      - name: Generated agent instructions are current
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: |
+          set -euo pipefail
+          go build -o /tmp/burndrop ./cmd/burndrop
+          /tmp/burndrop instructions -format agents | diff - agent-instructions/AGENTS.md
+          /tmp/burndrop instructions -format claude | diff - agent-instructions/CLAUDE.md
+          /tmp/burndrop instructions -format cursor | diff - agent-instructions/cursor-rules/burndrop.mdc
+          /tmp/burndrop instructions -format mcp-json | diff - agent-instructions/mcp/mcp.json
+          /tmp/burndrop instructions -format text | diff - agent-instructions/system-prompt.txt
+
+  secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

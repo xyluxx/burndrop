@@ -1,0 +1,8 @@
+# Every change is reviewed by the maintainer. Cryptography, the relay, and
+# the page get an explicit second look before merge (branch protection).
+*                       @Ziadtalha
+/internal/crypto/       @Ziadtalha
+/internal/relay/        @Ziadtalha
+/web/src/crypto.ts      @Ziadtalha
+/spec/                  @Ziadtalha
+/.github/workflows/     @Ziadtalha
