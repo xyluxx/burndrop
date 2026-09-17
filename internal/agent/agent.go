@@ -433,6 +433,26 @@ type SendOutput struct {
 	Message   string    `json:"message"`
 }
 
+// CanSend reports whether a stored secret exists and is marked sendable,
+// without reading its value. It lets a caller refuse before asking the
+// human to confirm.
+func (a *Agent) CanSend(ctx context.Context, name string) error {
+	if err := storage.ValidateName(name); err != nil {
+		return err
+	}
+	meta, err := a.Store.Stat(ctx, name)
+	if err != nil {
+		return err
+	}
+	if meta.Kind == storage.KindPending {
+		return storage.ErrNotFound
+	}
+	if !meta.Sendable {
+		return ErrNotSendable
+	}
+	return nil
+}
+
 // Send encrypts a stored secret for a human and returns a one-time link.
 func (a *Agent) Send(ctx context.Context, in SendInput) (SendOutput, error) {
 	if err := storage.ValidateName(in.Name); err != nil {

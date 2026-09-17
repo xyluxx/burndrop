@@ -98,6 +98,33 @@ func (m *Manager) Get(ctx context.Context, name string) ([]byte, Metadata, error
 	return value, meta, nil
 }
 
+// Stat returns metadata without reading the value: session entries first,
+// then the index. Expired entries are reported as not found.
+func (m *Manager) Stat(ctx context.Context, name string) (Metadata, error) {
+	if err := ValidateName(name); err != nil {
+		return Metadata{}, err
+	}
+	now := m.now()
+	if list, err := m.session.List(ctx); err == nil {
+		for _, s := range list {
+			if s.Name == name {
+				if s.Expired(now) {
+					return Metadata{}, ErrNotFound
+				}
+				return s, nil
+			}
+		}
+	}
+	meta, err := m.index.Get(name)
+	if err != nil {
+		return Metadata{}, err
+	}
+	if meta.Expired(now) {
+		return Metadata{}, ErrNotFound
+	}
+	return meta, nil
+}
+
 // Delete removes a secret from wherever it lives. It succeeds if the secret
 // was removed from at least one place.
 func (m *Manager) Delete(ctx context.Context, name string) error {

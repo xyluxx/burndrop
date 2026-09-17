@@ -342,6 +342,18 @@ func TestSend(t *testing.T) {
 	if _, err := a.Send(ctx, SendInput{Name: "received"}); !errors.Is(err, ErrNotSendable) {
 		t.Fatalf("not sendable: %v", err)
 	}
+	if err := a.CanSend(ctx, "received"); !errors.Is(err, ErrNotSendable) {
+		t.Fatalf("can send: %v", err)
+	}
+	if err := a.CanSend(ctx, "missing"); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatalf("can send missing: %v", err)
+	}
+	if err := a.CanSend(ctx, "bad name"); !errors.Is(err, storage.ErrInvalidName) {
+		t.Fatal("can send name")
+	}
+	if err := a.CanSend(ctx, "pending."+r.RequestID); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatalf("can send pending: %v", err)
+	}
 	// A captured secret is sendable.
 	if _, err := a.Store.Put(ctx, "generated", []byte("generated-value-\x00\x01"), storage.Metadata{Retention: storage.RetentionUntilRevoked, Source: storage.SourceCapture, Sendable: true}); err != nil {
 		t.Fatal(err)

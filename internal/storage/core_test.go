@@ -162,6 +162,18 @@ func TestManager(t *testing.T) {
 	if v, meta, err := m.Get(ctx, "dated"); err != nil || string(v) != "d" || meta.Retention != "until:2026-09-17T13:00:00Z" {
 		t.Fatalf("get dated: %v", err)
 	}
+	if meta, err := m.Stat(ctx, "perm"); err != nil || meta.Name != "perm" || meta.Backend != "memory" {
+		t.Fatalf("stat: %v %+v", err, meta)
+	}
+	if meta, err := m.Stat(ctx, "sess"); err != nil || meta.Retention != RetentionSession {
+		t.Fatalf("stat session: %v %+v", err, meta)
+	}
+	if _, err := m.Stat(ctx, "nope"); !errors.Is(err, ErrNotFound) {
+		t.Fatal("stat missing")
+	}
+	if _, err := m.Stat(ctx, "bad name"); !errors.Is(err, ErrInvalidName) {
+		t.Fatal("stat name")
+	}
 	// Session shadows persistent for the same name.
 	_, _ = m.Put(ctx, "perm", []byte("shadow"), Metadata{Retention: RetentionSession})
 	if v, meta, _ := m.Get(ctx, "perm"); string(v) != "shadow" || meta.Retention != RetentionSession {
