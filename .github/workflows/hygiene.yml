@@ -5,6 +5,7 @@ name: hygiene
 # generated files up to date, and no personal data.
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
